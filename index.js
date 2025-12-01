@@ -30,11 +30,12 @@ app.use(express.urlencoded({ extended: true }));
 const db = knex({
     client: "pg",
     connection: {
-        host: process.env.RDS_HOSTNAME || "localhost",
-        user: process.env.RDS_USERNAME || "postgres",
-        password: process.env.RDS_PASSWORD || "admin",
-        database: process.env.RDS_DB_NAME || "Practice",
-        port: process.env.RDS_PORT ? parseInt(process.env.DB_PORT) : 5432
+        host: process.env.RDS_HOSTNAME,
+        user: process.env.RDS_USERNAME,
+        password: process.env.RDS_PASSWORD,
+        database: process.env.RDS_DB_NAME || "ebdb",
+        port: process.env.RDS_PORT ? parseInt(process.env.RDS_PORT) : 5432,
+        ssl: { rejectUnauthorized: false } 
     }
 });
 
@@ -42,7 +43,7 @@ const db = knex({
 app.use(
     session(
         {
-    secret: process.env.SESSION_SECRET || 'fallback-secret-key',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
         }
