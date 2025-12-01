@@ -1,0 +1,95 @@
+Here’s a one-page Git workflow cheat sheet for safely working with branches, editing, and pushing to a shared repository.
+
+# Make sure you are in the directory with the files (should end in INTEX2025Repository)
+
+
+1️⃣ Update main safely
+git checkout main        # Switch to main branch
+git pull                 # Get latest changes from remote
+
+✅ Always update main before creating a new branch
+
+
+--- DO NOT EDIT THE MAIN BRANCH, ONLY THE CHECKED OUT BRANCH ---
+2️⃣ Create your feature branch
+
+git checkout -b my-feature-branch
+
+# Now all edits are on this branch
+# Main remains untouched
+
+
+3️⃣ Make edits locally
+
+# Edit files in VS Code (or your editor)
+# Stage changes:
+
+    # Can also use the icons in the "Source Control" left window (tree-looking tab) 
+    #   instead of the terminal to commit 
+
+git add .   
+    # Click the "+" next to "Changes"
+
+# Commit changes with a message:
+git commit -m "Describe what you changed"      
+    # Type a message in the box and click "Commit"
+
+
+4️⃣ Push your branch to GitHub
+
+git push -u origin my-feature-branch
+
+# First push creates the branch on GitHub
+# Subsequent pushes just update it
+
+
+5️⃣ Keep your branch up-to-date (optional)
+
+# If main gets new changes while you work:
+
+git checkout main
+git pull
+git checkout my-feature-branch
+git merge main                  # OR git rebase main
+
+# Ensures your branch is compatible with latest main
+
+
+6️⃣ Collaborate / Review
+
+# Go to GitHub → your branch → “Pull Request”
+# Team can review your changes
+# Once approved, merge into main
+
+
+7️⃣ Verify branch
+
+git branch               # Shows all branches; * is current
+git status               # Shows current branch & staged changes
+
+# Confirms you’re editing the right branch
+
+
+8️⃣ Branch tips / rules
+
+# Never edit main directly
+# Make a new branch for every feature/fix
+# Commit often, push after meaningful changes
+# Delete branches after merging to keep repo clean:
+
+--- ONLY DELETE IF YOU ARE SURE CHANGES HAVE BEEN MERGED (updated & approved on the main) --- 
+git branch -d my-feature-branch             # local, on my machine
+git push origin --delete my-feature-branch  # remote, on the GitHub repository
+
+
+9️⃣ Quick summary of commands
+
+- ACTION -	                - COMMAND -
+Switch branch	            git checkout branch-name
+Update branch from remote	git pull
+Create branch	            git checkout -b branch-name
+Stage changes	            git add .
+Commit changes	            git commit -m "message"
+Push branch	                git push -u origin branch-name
+Merge main into branch	    git merge main
+Check current branch	    git branch / git status
