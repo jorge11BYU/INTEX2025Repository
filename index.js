@@ -2,6 +2,7 @@
 // npm install express ejs dotenv knex pg to install dependancies
 // npm install --save-dev nodemon
 // instead of doing node index.js do npm run dev
+// test
 
 // import necessary modules
 import express from "express";
