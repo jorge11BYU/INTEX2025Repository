@@ -51,6 +51,7 @@ git checkout main
 git pull
 git checkout my-feature-branch
 git merge main                  # OR git rebase main
+    # Does NOT edit main, just brings main updates into your branch
 
 # Ensures your branch is compatible with latest main
 
@@ -58,6 +59,7 @@ git merge main                  # OR git rebase main
 6️⃣ Collaborate / Review
 
 # Go to GitHub → your branch → “Pull Request”
+    # Found under the dropdown with "Contribute"
 # Team can review your changes
 # Once approved, merge into main
 
