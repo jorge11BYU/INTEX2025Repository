@@ -1,0 +1,30 @@
+<nav class="navbar navbar-expand-lg navbar-custom shadow-sm">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="/">
+        <!-- If you have a logo image, uncomment the line below and remove the text -->
+        <!-- <img src="/images/logo.png" alt="Ella Rises" height="40"> -->
+        Ella Rises
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+          
+          <% if (typeof isLoggedIn !== 'undefined' && isLoggedIn || (typeof user !== 'undefined' && user)) { %>
+            <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link" href="/participants">Participants</a></li>
+            
+            <!-- Add these links later as you build the other tables -->
+            <!-- <li class="nav-item"><a class="nav-link" href="/events">Events</a></li> -->
+            <!-- <li class="nav-item"><a class="nav-link" href="/donations">Donations</a></li> -->
+            
+            <li class="nav-item"><a class="nav-link btn btn-sm btn-outline-light ms-2" href="/logout">Logout</a></li>
+          <% } else { %>
+            <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
+          <% } %>
+        </ul>
+      </div>
+    </div>
+</nav>

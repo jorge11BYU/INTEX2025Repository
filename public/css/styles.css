@@ -1,0 +1,108 @@
+/* Ella Rises Theme */
+:root {
+    /* Replace these HEX codes with the specific ones from your logo */
+    --primary-color: #3A3F3B; /* Example: Coral/Red */
+    --secondary-color: #F9F5EA; /* Off-white */
+    --accent-color: #F9AFB1; /* Navy Blue */
+    --text-dark: #333333;
+    --text-light: #ffffff;
+}
+/* --- 1. THEME VARIABLES --- */
+:root {
+    /* Ella Rises Brand Colors */
+    --primary-color: #3A3F3B; 
+    --secondary-color: #F9F5EA; 
+    --accent-color: #F9AFB1;
+    
+    /* Text Colors */
+    --text-dark: #333333;
+    --text-light: #ffffff;
+}
+
+/* --- 2. GLOBAL STYLES --- */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--secondary-color); /* This applies the background color! */
+    color: var(--text-dark);
+}
+
+/* --- 3. CUSTOM NAVBAR --- */
+.navbar-custom {
+    background-color: var(--accent-color);
+}
+.navbar-custom .navbar-brand, .navbar-custom .nav-link {
+    color: var(--text-light);
+}
+.navbar-custom .nav-link:hover {
+    color: var(--primary-color);
+}
+
+/* --- 4. LANDING PAGE HERO SECTION --- */
+.hero-section {
+    background: linear-gradient(rgba(249, 175, 177, .7), rgba(249, 175, 177, .7)), url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1351&q=80');
+    background-size: cover;
+    background-position: center;
+    color: white;
+    padding: 100px 0;
+    text-align: center;
+}
+
+/* --- 5. DASHBOARD CARDS --- */
+.stat-card {
+    border-left: 5px solid var(--primary-color);
+    background-color: #ffffff; 
+    transition: transform 0.2s;
+}
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Tables */
+.table-responsive {
+    background-color: #ffffff;
+    border-radius: 8px;
+}
+
+/* --- 6. BOOTSTRAP OVERRIDES --- */
+
+/* Red Buttons */
+.btn-primary {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: var(--text-light) !important;
+}
+.btn-primary:hover {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    filter: brightness(0.85);
+}
+
+/* Navy Buttons */
+.btn-success {
+    background-color: var(--accent-color) !important;
+    border-color: var(--accent-color) !important;
+    color: var(--text-light) !important;
+}
+.btn-success:hover {
+    background-color: var(--accent-color) !important;
+    border-color: var(--accent-color) !important;
+    filter: brightness(1.2);
+}
+
+/* Outline Buttons */
+.btn-outline-primary {
+    color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+.btn-outline-primary:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+/* Text Utilities */
+.text-primary {
+    color: var(--primary-color) !important;
+}
+.bg-primary {
+    background-color: var(--primary-color) !important;
+}
