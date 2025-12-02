@@ -8,7 +8,7 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
+<body class="bg-light">
 
     <%- include('partials/navbar') %>
 
@@ -19,7 +19,8 @@
         <!-- Stats Cards -->
         <div class="row mb-5">
             <div class="col-md-4">
-                <div class="card stat-card shadow-sm">
+                <!-- Removed inline style; now uses CSS theme -->
+                <div class="card stat-card shadow-sm mb-3">
                     <div class="card-body">
                         <h5 class="card-title text-secondary">Total Participants</h5>
                         <h2 class="fw-bold"><%= stats.participants %></h2>
@@ -27,15 +28,17 @@
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card stat-card shadow-sm" style="border-color: #1D3557;">
+                <!-- Removed inline style; now uses CSS theme -->
+                <div class="card stat-card shadow-sm mb-3">
                     <div class="card-body">
-                        <h5 class="card-title text-secondary">Events Hosted</h5>
+                        <h5 class="card-title text-secondary">Events Hosted/Attended</h5>
                         <h2 class="fw-bold"><%= stats.events %></h2>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card stat-card shadow-sm" style="border-color: #F4A261;">
+                <!-- Removed inline style; now uses CSS theme -->
+                <div class="card stat-card shadow-sm mb-3">
                     <div class="card-body">
                         <h5 class="card-title text-secondary">Donations</h5>
                         <h2 class="fw-bold"><%= stats.donations %></h2>
@@ -45,44 +48,46 @@
         </div>
 
         <!-- Chart Section -->
+        <!-- Only show chart if Manager or Superuser (Optional: Remove if unused) -->
+        <% if (role === 'manager' || user === 'superuser') { %>
         <div class="card shadow-sm p-4">
             <h4>Program Impact</h4>
-            <canvas id="impactChart" style="max-height: 400px;"></canvas>
+            <div style="height: 400px; width: 100%;">
+                <canvas id="impactChart"></canvas>
+            </div>
         </div>
+        <% } %>
     </div>
 
+    <% if (role === 'manager' || user === 'superuser') { %>
     <script>
-        // Example Chart Implementation
+        // Static Dummy Data for visual demonstration
+        const chartLabels = ['Leadership Workshop', 'Mentorship', 'Community Service', 'Annual Gala'];
+        const chartDataPoints = [45, 30, 20, 60];
+
         const ctx = document.getElementById('impactChart').getContext('2d');
         const myChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['Workshop A', 'Workshop B', 'Workshop C', 'Mentorship'],
+                labels: chartLabels,
                 datasets: [{
                     label: '# of Attendees',
-                    data: [12, 19, 3, 5], // You can pass dynamic data here using EJS
-                    backgroundColor: [
-                        'rgba(230, 57, 70, 0.2)',
-                        'rgba(29, 53, 87, 0.2)',
-                        'rgba(244, 162, 97, 0.2)',
-                        'rgba(42, 157, 143, 0.2)'
-                    ],
-                    borderColor: [
-                        'rgba(230, 57, 70, 1)',
-                        'rgba(29, 53, 87, 1)',
-                        'rgba(244, 162, 97, 1)',
-                        'rgba(42, 157, 143, 1)'
-                    ],
+                    data: chartDataPoints,
+                    backgroundColor: 'rgba(249, 175, 177, 0.6)', /* Your Pink Accent */
+                    borderColor: '#3A3F3B', /* Your Dark Grey Primary */
                     borderWidth: 1
                 }]
             },
             options: {
+                responsive: true,
+                maintainAspectRatio: false,
                 scales: {
-                    y: { beginAtZero: true }
+                    y: { beginAtZero: true, ticks: { stepSize: 5 } }
                 }
             }
         });
     </script>
+    <% } %>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
