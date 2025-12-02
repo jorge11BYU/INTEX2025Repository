@@ -43,9 +43,9 @@ const db = knex({
 app.use(
     session(
         {
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
+            secret: process.env.SESSION_SECRET,
+            resave: false,
+            saveUninitialized: false,
         }
     )
 );
@@ -69,36 +69,16 @@ app.use((req, res, next) => {
 });
 
 // Root route
-app.get("/", async (req, res) => {
+app.get("/", (req, res) => {
   if (!req.session.isLoggedIn) {
     return res.render("login", { error_message: "", title: "Login" });
   }
 
-  try {
-    // Check query parameter
-    const sortBy = req.query.sort;
-
-    let query = db("books").select("*");
-    
-    if (sortBy === "author") {
-      query = query.orderBy("author", "asc");
-    } else if (sortBy === "description") {
-      query = query.orderBy("description", "asc");
-    } else {
-      query = query.orderBy("id", "asc"); // default
-    }
-
-    const bookList = await query;
-
-    res.render("index", { 
-      bookList,
-      title: "Home Page",
-      username: req.session.username
-    });
-  } catch (err) {
-    console.error("Database error:", err.message);
-    res.status(500).send("Database error");
-  }
+  // Just render the home page without querying the books table
+  // Passing empty bookList[] in case your ejs file still tries to loop through it
+  res.render("index", { 
+    username: req.session.username
+  });
 });
 
 
@@ -106,16 +86,33 @@ app.get("/", async (req, res) => {
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
+  console.log("--- LOGIN ATTEMPT ---");
+  console.log("Username submitted:", username);
+  console.log("Password submitted:", password);
+
   try {
     // Find user by username first
-    const user = await db("users").where({ username }).first();
+    const user = await db("users").where({ username: username }).first();
+
+    console.log("Database result for user:", user);
 
     // Check if user exists and password matches
     if (user && user.password === password) {
+      console.log("SUCCESS: Credentials match.");
       req.session.isLoggedIn = true;
       req.session.username = user.username;
-      res.redirect("/");
+      
+      // Explicitly save session before redirecting to ensure race conditions don't kill the cookie
+      req.session.save(err => {
+        if (err) {
+            console.log("Session save error:", err);
+            return res.status(500).send("Session error");
+        }
+        res.redirect("/");
+      });
+      
     } else {
+      console.log("FAILURE: User not found OR password mismatch.");
       // Invalid login — still pass a title for the template
       res.render("login", { 
         error_message: "Invalid login", 
@@ -123,9 +120,9 @@ app.post("/login", async (req, res) => {
       });
     }
   } catch (err) {
-    console.error("Login error:", err);
+    console.error("CRITICAL Login error:", err);
     res.render("login", { 
-      error_message: "Invalid login", 
+      error_message: "Login Error: " + err.message, 
       title: "Login" 
     });
   }
