@@ -2,7 +2,6 @@
     <div class="container">
       <a class="navbar-brand" href="/">
         <!-- LOGO IMAGE: Ensure you have a file named 'logo.png' in 'public/images/' -->
-        <!-- You can adjust 'height' to make it bigger or smaller -->
         <img src="/images/logo.png" alt="Ella Rises" height="50">
       </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -31,7 +30,10 @@
                 
                 <!-- Section 1: Main Data -->
                 <li><h6 class="dropdown-header text-uppercase small" style="color: var(--primary-color); font-weight: bold;">Engagement</h6></li>
-                <li><a class="dropdown-item" href="/participants">Participants</a></li>
+                
+                <!-- DYNAMIC LINK TEXT: 'Participants' for Managers, 'Personal Info' for Users -->
+                <li><a class="dropdown-item" href="/participants"><%= (typeof role !== 'undefined' && role === 'manager') ? 'Participants' : 'Personal Info' %></a></li>
+                
                 <li><a class="dropdown-item" href="/events">Events</a></li>
                 <li><a class="dropdown-item" href="/surveys">Surveys</a></li>
                 <li><a class="dropdown-item" href="/milestones">Milestones</a></li>

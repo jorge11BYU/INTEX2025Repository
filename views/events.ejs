@@ -10,7 +10,8 @@
     <%- include('partials/navbar') %>
     <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2>Events</h2>
+            <!-- Dynamic Header: Directory for Managers, My Events for Users -->
+            <h2><%= isManager ? 'Event Directory' : 'My Events' %></h2>
             <% if (isManager) { %>
                 <a href="/events/add" class="btn btn-success">Create Event</a>
             <% } %>
@@ -19,7 +20,10 @@
         <!-- SEARCH BAR -->
         <form action="/events" method="GET" class="mb-4">
             <div class="input-group shadow-sm">
-                <input type="text" name="q" class="form-control border-0" placeholder="Search by event name or location..." value="<%= typeof query !== 'undefined' ? query : '' %>">
+                <!-- Dynamic Placeholder -->
+                <input type="text" name="q" class="form-control border-0" 
+                       placeholder="<%= isManager ? 'Search by event name, location, or date...' : 'Search events by event name, location, or date...' %>" 
+                       value="<%= typeof query !== 'undefined' ? query : '' %>">
                 <button type="submit" class="btn btn-primary px-4">Search</button>
                 <% if (typeof query !== 'undefined' && query) { %>
                     <a href="/events" class="btn btn-secondary px-3">Clear</a>
@@ -44,6 +48,7 @@
                     <% } %>
                     <% events.forEach(e => { %>
                         <tr>
+                            <!-- Displaying Date and Time -->
                             <td><%= new Date(e.start_time).toLocaleDateString() %> <%= new Date(e.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %></td>
                             <td><%= e.event_name %><br><small class="text-muted"><%= e.event_description %></small></td>
                             <td><%= e.location_name %></td>

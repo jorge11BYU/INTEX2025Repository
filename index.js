@@ -56,11 +56,25 @@ app.get("/", (req, res) => {
     res.render("landing", { isLoggedIn: req.session.isLoggedIn, username: req.session.username, role: req.session.role });
 });
 
-app.get("/donate", (req, res) => {
-    if (req.session.isLoggedIn) {
-        return res.redirect("/donations");
+app.get("/donate", async (req, res) => {
+    let participant = null;
+    
+    // If user is logged in, try to fetch their info to autofill the form
+    if (req.session.isLoggedIn && req.session.participantId) {
+        try {
+            participant = await db("participants").where({ participant_id: req.session.participantId }).first();
+        } catch (err) {
+            console.error("Error fetching participant for donation autofill:", err);
+        }
     }
-    res.render("donate_public", { user: req.session.username, isLoggedIn: req.session.isLoggedIn, role: req.session.role, success_message: null });
+
+    res.render("donate_public", { 
+        user: req.session.username, 
+        isLoggedIn: req.session.isLoggedIn, 
+        role: req.session.role, 
+        success_message: null,
+        participant: participant // Pass participant data (can be null if guest)
+    });
 });
 
 app.post("/donate", async (req, res) => {
@@ -75,7 +89,20 @@ app.post("/donate", async (req, res) => {
             participantId = newP.participant_id;
         }
         await db("donations").insert({ participant_id: participantId, donation_amount, donation_date: new Date() });
-        res.render("donate_public", { user: req.session.username, isLoggedIn: req.session.isLoggedIn, role: req.session.role, success_message: `Thank you, ${first_name}!` });
+        
+        // Refetch participant info if logged in to keep the form filled after success
+        let participant = null;
+        if (req.session.isLoggedIn && req.session.participantId) {
+             participant = await db("participants").where({ participant_id: req.session.participantId }).first();
+        }
+
+        res.render("donate_public", { 
+            user: req.session.username, 
+            isLoggedIn: req.session.isLoggedIn, 
+            role: req.session.role, 
+            success_message: `Thank you, ${first_name}! Your donation of $${donation_amount} has been received.`,
+            participant: participant
+        });
     } catch (err) {
         console.error(err);
         res.status(500).send("Error processing donation.");
@@ -137,17 +164,14 @@ app.get("/participants", isLoggedIn, async (req, res) => {
     let query = db("participants").select("*").orderBy("participant_id");
     const searchQuery = req.query.q;
 
-    // Filter by Role
     if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
         query = query.where('participant_id', req.session.participantId);
     }
 
-    // Filter by Search (UPDATED FOR FULL NAME)
     if (searchQuery) {
         query = query.andWhere(builder => {
             builder.where('first_name', 'ilike', `%${searchQuery}%`)
                    .orWhere('last_name', 'ilike', `%${searchQuery}%`)
-                   // This logic concatenates First + Space + Last and checks that string
                    .orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", [`%${searchQuery}%`])
                    .orWhere('email', 'ilike', `%${searchQuery}%`)
                    .orWhere('city', 'ilike', `%${searchQuery}%`);
@@ -205,9 +229,7 @@ app.get("/donations", isLoggedIn, async (req, res) => {
         query = query.andWhere(builder => {
             builder.where('participants.first_name', 'ilike', `%${searchQuery}%`)
                    .orWhere('participants.last_name', 'ilike', `%${searchQuery}%`)
-                   // Added full name search here too!
                    .orWhereRaw("CONCAT(participants.first_name, ' ', participants.last_name) ILIKE ?", [`%${searchQuery}%`]);
-            
             if (!isNaN(searchQuery)) {
                 builder.orWhere('donation_amount', '=', searchQuery);
             }
@@ -265,10 +287,14 @@ app.get("/surveys", isLoggedIn, async (req, res) => {
         query = query.andWhere(builder => {
             builder.where('participants.first_name', 'ilike', `%${searchQuery}%`)
                    .orWhere('participants.last_name', 'ilike', `%${searchQuery}%`)
-                   // Added full name search here too!
                    .orWhereRaw("CONCAT(participants.first_name, ' ', participants.last_name) ILIKE ?", [`%${searchQuery}%`])
                    .orWhere('event_templates.event_name', 'ilike', `%${searchQuery}%`)
-                   .orWhere('surveys.comments', 'ilike', `%${searchQuery}%`);
+                   .orWhere('surveys.comments', 'ilike', `%${searchQuery}%`)
+                   .orWhereRaw("TO_CHAR(surveys.submission_date, 'MM/DD/YYYY') ILIKE ?", [`%${searchQuery}%`])
+                   .orWhereRaw("TO_CHAR(surveys.submission_date, 'fmMM/fmDD/YYYY') ILIKE ?", [`%${searchQuery}%`])
+                   .orWhereRaw("TO_CHAR(surveys.submission_date, 'YYYY-MM-DD') ILIKE ?", [`%${searchQuery}%`])
+                   .orWhereRaw("TO_CHAR(event_occurrences.start_time, 'MM/DD/YYYY') ILIKE ?", [`%${searchQuery}%`])
+                   .orWhereRaw("TO_CHAR(event_occurrences.start_time, 'fmMM/fmDD/YYYY') ILIKE ?", [`%${searchQuery}%`]);
         });
     }
 
@@ -326,7 +352,12 @@ app.get("/events", isLoggedIn, async (req, res) => {
     if (searchQuery) {
         query = query.andWhere(builder => {
             builder.where('event_templates.event_name', 'ilike', `%${searchQuery}%`)
-                   .orWhere('locations.location_name', 'ilike', `%${searchQuery}%`);
+                   .orWhere('locations.location_name', 'ilike', `%${searchQuery}%`)
+                   .orWhereRaw("TO_CHAR(event_occurrences.start_time, 'MM/DD/YYYY') ILIKE ?", [`%${searchQuery}%`])
+                   .orWhereRaw("TO_CHAR(event_occurrences.start_time, 'fmMM/fmDD/YYYY') ILIKE ?", [`%${searchQuery}%`])
+                   .orWhereRaw("TO_CHAR(event_occurrences.start_time, 'MM-DD-YYYY') ILIKE ?", [`%${searchQuery}%`])
+                   .orWhereRaw("TO_CHAR(event_occurrences.start_time, 'Month') ILIKE ?", [`%${searchQuery}%`])
+                   .orWhereRaw("TO_CHAR(event_occurrences.start_time, 'YYYY-MM-DD') ILIKE ?", [`%${searchQuery}%`]);
         });
     }
 
@@ -381,9 +412,13 @@ app.get("/milestones", isLoggedIn, async (req, res) => {
         query = query.andWhere(builder => {
             builder.where('participants.first_name', 'ilike', `%${searchQuery}%`)
                    .orWhere('participants.last_name', 'ilike', `%${searchQuery}%`)
-                   // Added full name search here too!
                    .orWhereRaw("CONCAT(participants.first_name, ' ', participants.last_name) ILIKE ?", [`%${searchQuery}%`])
-                   .orWhere('milestone_types.milestone_title', 'ilike', `%${searchQuery}%`);
+                   .orWhere('milestone_types.milestone_title', 'ilike', `%${searchQuery}%`)
+                   .orWhereRaw("TO_CHAR(milestones.milestone_date, 'MM/DD/YYYY') ILIKE ?", [`%${searchQuery}%`])
+                   .orWhereRaw("TO_CHAR(milestones.milestone_date, 'fmMM/fmDD/YYYY') ILIKE ?", [`%${searchQuery}%`])
+                   .orWhereRaw("TO_CHAR(milestones.milestone_date, 'MM-DD-YYYY') ILIKE ?", [`%${searchQuery}%`])
+                   .orWhereRaw("TO_CHAR(milestones.milestone_date, 'Month') ILIKE ?", [`%${searchQuery}%`])
+                   .orWhereRaw("TO_CHAR(milestones.milestone_date, 'YYYY-MM-DD') ILIKE ?", [`%${searchQuery}%`]);
         });
     }
 
@@ -433,9 +468,9 @@ app.get("/users", isManager, async (req, res) => {
         if (searchQuery) {
             query = query.where(builder => {
                 builder.where('users.username', 'ilike', `%${searchQuery}%`)
+                       .orWhere('users.role', 'ilike', `%${searchQuery}%`)
                        .orWhere('participants.first_name', 'ilike', `%${searchQuery}%`)
                        .orWhere('participants.last_name', 'ilike', `%${searchQuery}%`)
-                       // Added full name search here too!
                        .orWhereRaw("CONCAT(participants.first_name, ' ', participants.last_name) ILIKE ?", [`%${searchQuery}%`]);
             });
         }

@@ -10,13 +10,15 @@
     <%- include('partials/navbar') %>
     <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2>Participant Directory</h2>
+            <!-- Dynamic Header: Directory for Managers, Personal Info for Users -->
+            <h2><%= isManager ? 'Participant Directory' : 'Personal Info' %></h2>
             <% if (isManager) { %>
                 <a href="/participants/add" class="btn btn-success">Add New Participant</a>
             <% } %>
         </div>
 
-        <!-- SEARCH BAR -->
+        <!-- SEARCH BAR (Manager Only) -->
+        <% if (isManager) { %>
         <form action="/participants" method="GET" class="mb-4">
             <div class="input-group shadow-sm">
                 <input type="text" name="q" class="form-control border-0" placeholder="Search by name, email, or city..." value="<%= typeof query !== 'undefined' ? query : '' %>">
@@ -26,6 +28,7 @@
                 <% } %>
             </div>
         </form>
+        <% } %>
 
         <div class="table-responsive bg-white shadow-sm p-3 rounded">
             <table class="table table-hover">
