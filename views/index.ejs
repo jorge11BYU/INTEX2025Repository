@@ -13,11 +13,6 @@
       position: relative;
       margin-bottom: 2rem;
     }
-    .manage-users-btn {
-      position: absolute;
-      top: 0;
-      right: 0;
-    }
     .header-title {
       text-align: center;
     }
@@ -27,42 +22,8 @@
   <div class="container py-4">
     <!-- Header with centered title and top-right button -->
     <div class="header-container">
-      <h1 class="header-title text-dark">Books List</h1>
+      <h1 class="header-title text-dark">Home Page</h1>
     </div>
-
-    <!-- Users Table -->
-    <table class="table table-striped table-bordered">
-      <thead class="table-dark">
-        <tr>
-          <th>ID</th>
-          <th>Title</th>
-          <th>Author</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% bookList.forEach(books => { %>
-          <tr>
-            <td><%= books.id %></td>
-            <td><%= books.title %></td>
-            <td><%= books.author %></td>
-            <td><%= books.description %></td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-
-        <!-- Sort button -->
-    <form action="/" method="GET" style="display:inline;">
-      <input type="hidden" name="sort" value="author">
-      <button type="submit">Sort by Author</button>
-    </form>
-
-    <form action="/" method="GET" style="display:inline;">
-      <input type="hidden" name="sort" value="description">
-      <button type="submit">Sort by Description</button>
-    </form>
-
   </div>
 </body>
 </html>
