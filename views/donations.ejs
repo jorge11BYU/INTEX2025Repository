@@ -15,6 +15,18 @@
                 <a href="/donations/add" class="btn btn-success">Record New Donation</a>
             <% } %>
         </div>
+
+        <!-- SEARCH BAR -->
+        <form action="/donations" method="GET" class="mb-4">
+            <div class="input-group shadow-sm">
+                <input type="text" name="q" class="form-control border-0" placeholder="Search by donor name or amount..." value="<%= typeof query !== 'undefined' ? query : '' %>">
+                <button type="submit" class="btn btn-primary px-4">Search</button>
+                <% if (typeof query !== 'undefined' && query) { %>
+                    <a href="/donations" class="btn btn-secondary px-3">Clear</a>
+                <% } %>
+            </div>
+        </form>
+
         <div class="table-responsive bg-white shadow-sm p-3 rounded">
             <table class="table table-hover">
                 <thead class="table-light">
@@ -26,6 +38,9 @@
                     </tr>
                 </thead>
                 <tbody>
+                    <% if (donations.length === 0) { %>
+                        <tr><td colspan="4" class="text-center text-muted py-4">No records found.</td></tr>
+                    <% } %>
                     <% donations.forEach(d => { %>
                         <tr>
                             <td><%= new Date(d.donation_date).toLocaleDateString() %></td>

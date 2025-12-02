@@ -92,7 +92,7 @@ app.post("/login", async (req, res) => {
             req.session.isLoggedIn = true;
             req.session.username = user.username;
             req.session.role = user.role;
-            req.session.participantId = user.participant_id; // Link to data
+            req.session.participantId = user.participant_id; 
             req.session.save(() => res.redirect("/dashboard"));
         } else {
             res.render("login", { error_message: "Invalid credentials", isLoggedIn: false });
@@ -135,12 +135,36 @@ app.get("/dashboard", isLoggedIn, async (req, res) => {
 // 4. PARTICIPANTS
 app.get("/participants", isLoggedIn, async (req, res) => {
     let query = db("participants").select("*").orderBy("participant_id");
+    const searchQuery = req.query.q;
+
+    // Filter by Role
     if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
         query = query.where('participant_id', req.session.participantId);
     }
+
+    // Filter by Search (UPDATED FOR FULL NAME)
+    if (searchQuery) {
+        query = query.andWhere(builder => {
+            builder.where('first_name', 'ilike', `%${searchQuery}%`)
+                   .orWhere('last_name', 'ilike', `%${searchQuery}%`)
+                   // This logic concatenates First + Space + Last and checks that string
+                   .orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", [`%${searchQuery}%`])
+                   .orWhere('email', 'ilike', `%${searchQuery}%`)
+                   .orWhere('city', 'ilike', `%${searchQuery}%`);
+        });
+    }
+
     const participants = await query;
-    res.render("participants", { participants, role: req.session.role, isManager: req.session.role === 'manager', user: req.session.username, isLoggedIn: true });
+    res.render("participants", { 
+        participants, 
+        role: req.session.role, 
+        isManager: req.session.role === 'manager', 
+        user: req.session.username, 
+        isLoggedIn: true,
+        query: searchQuery 
+    });
 });
+
 app.get("/participants/add", isManager, (req, res) => res.render("participants_add", { user: req.session.username, isLoggedIn: true, returnTo: req.query.returnTo }));
 app.post("/participants/add", isManager, async (req, res) => {
     try {
@@ -171,12 +195,36 @@ app.get("/donations", isLoggedIn, async (req, res) => {
         .join("participants", "donations.participant_id", "participants.participant_id")
         .select("donations.*", "participants.first_name", "participants.last_name")
         .orderBy("donations.donation_date", "desc");
+    const searchQuery = req.query.q;
+
     if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
         query = query.where('donations.participant_id', req.session.participantId);
     }
+
+    if (searchQuery) {
+        query = query.andWhere(builder => {
+            builder.where('participants.first_name', 'ilike', `%${searchQuery}%`)
+                   .orWhere('participants.last_name', 'ilike', `%${searchQuery}%`)
+                   // Added full name search here too!
+                   .orWhereRaw("CONCAT(participants.first_name, ' ', participants.last_name) ILIKE ?", [`%${searchQuery}%`]);
+            
+            if (!isNaN(searchQuery)) {
+                builder.orWhere('donation_amount', '=', searchQuery);
+            }
+        });
+    }
+
     const donations = await query;
-    res.render("donations", { donations, role: req.session.role, isManager: req.session.role === 'manager', user: req.session.username, isLoggedIn: true });
+    res.render("donations", { 
+        donations, 
+        role: req.session.role, 
+        isManager: req.session.role === 'manager', 
+        user: req.session.username, 
+        isLoggedIn: true,
+        query: searchQuery 
+    });
 });
+
 app.get("/donations/add", isManager, async (req, res) => {
     const participants = await db("participants").select("participant_id", "first_name", "last_name").orderBy("last_name");
     res.render("donations_add", { participants, user: req.session.username, isLoggedIn: true, newParticipantId: req.query.newParticipantId });
@@ -207,12 +255,34 @@ app.get("/surveys", isLoggedIn, async (req, res) => {
         .join("event_templates", "event_occurrences.event_template_id", "event_templates.event_template_id")
         .select("surveys.*", "participants.first_name", "participants.last_name", "event_templates.event_name", "event_occurrences.start_time")
         .orderBy("surveys.submission_date", "desc");
+    const searchQuery = req.query.q;
+
     if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
         query = query.where('surveys.participant_id', req.session.participantId);
     }
+
+    if (searchQuery) {
+        query = query.andWhere(builder => {
+            builder.where('participants.first_name', 'ilike', `%${searchQuery}%`)
+                   .orWhere('participants.last_name', 'ilike', `%${searchQuery}%`)
+                   // Added full name search here too!
+                   .orWhereRaw("CONCAT(participants.first_name, ' ', participants.last_name) ILIKE ?", [`%${searchQuery}%`])
+                   .orWhere('event_templates.event_name', 'ilike', `%${searchQuery}%`)
+                   .orWhere('surveys.comments', 'ilike', `%${searchQuery}%`);
+        });
+    }
+
     const surveys = await query;
-    res.render("surveys", { surveys, role: req.session.role, isManager: req.session.role === 'manager', user: req.session.username, isLoggedIn: true });
+    res.render("surveys", { 
+        surveys, 
+        role: req.session.role, 
+        isManager: req.session.role === 'manager', 
+        user: req.session.username, 
+        isLoggedIn: true,
+        query: searchQuery 
+    });
 });
+
 app.get("/surveys/add", isManager, async (req, res) => {
     const participants = await db("participants").select("participant_id", "first_name", "last_name").orderBy("last_name");
     const events = await db("event_occurrences").join("event_templates", "event_occurrences.event_template_id", "event_templates.event_template_id").select("event_occurrences.event_occurrence_id", "event_templates.event_name", "event_occurrences.start_time").orderBy("event_occurrences.start_time", "desc");
@@ -246,12 +316,29 @@ app.get("/events", isLoggedIn, async (req, res) => {
         .join("locations", "event_occurrences.location_id", "locations.location_id")
         .select("event_occurrences.*", "event_templates.event_name", "event_templates.event_description", "locations.location_name")
         .orderBy("event_occurrences.start_time", "desc");
+    const searchQuery = req.query.q;
+
     if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
         query = query.join("registrations", "event_occurrences.event_occurrence_id", "registrations.event_occurrence_id")
                      .where("registrations.participant_id", req.session.participantId);
     }
+
+    if (searchQuery) {
+        query = query.andWhere(builder => {
+            builder.where('event_templates.event_name', 'ilike', `%${searchQuery}%`)
+                   .orWhere('locations.location_name', 'ilike', `%${searchQuery}%`);
+        });
+    }
+
     const events = await query;
-    res.render("events", { events, role: req.session.role, isManager: req.session.role === 'manager', user: req.session.username, isLoggedIn: true });
+    res.render("events", { 
+        events, 
+        role: req.session.role, 
+        isManager: req.session.role === 'manager', 
+        user: req.session.username, 
+        isLoggedIn: true,
+        query: searchQuery 
+    });
 });
 app.get("/events/add", isManager, async (req, res) => {
     const templates = await db("event_templates").select("*");
@@ -284,11 +371,31 @@ app.get("/milestones", isLoggedIn, async (req, res) => {
         .join("milestone_types", "milestones.milestone_type_id", "milestone_types.milestone_type_id")
         .select("milestones.*", "participants.first_name", "participants.last_name", "milestone_types.milestone_title")
         .orderBy("milestones.milestone_date", "desc");
+    const searchQuery = req.query.q;
+
     if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
         query = query.where('milestones.participant_id', req.session.participantId);
     }
+
+    if (searchQuery) {
+        query = query.andWhere(builder => {
+            builder.where('participants.first_name', 'ilike', `%${searchQuery}%`)
+                   .orWhere('participants.last_name', 'ilike', `%${searchQuery}%`)
+                   // Added full name search here too!
+                   .orWhereRaw("CONCAT(participants.first_name, ' ', participants.last_name) ILIKE ?", [`%${searchQuery}%`])
+                   .orWhere('milestone_types.milestone_title', 'ilike', `%${searchQuery}%`);
+        });
+    }
+
     const milestones = await query;
-    res.render("milestones", { milestones, role: req.session.role, isManager: req.session.role === 'manager', user: req.session.username, isLoggedIn: true });
+    res.render("milestones", { 
+        milestones, 
+        role: req.session.role, 
+        isManager: req.session.role === 'manager', 
+        user: req.session.username, 
+        isLoggedIn: true,
+        query: searchQuery 
+    });
 });
 app.get("/milestones/add", isManager, async (req, res) => {
     const participants = await db("participants").select("participant_id", "first_name", "last_name").orderBy("last_name");
@@ -317,11 +424,30 @@ app.post("/milestones/delete/:id", isManager, async (req, res) => {
 // 9. USER MANAGEMENT
 app.get("/users", isManager, async (req, res) => {
     try {
-        const users = await db("users")
+        let query = db("users")
             .leftJoin("participants", "users.participant_id", "participants.participant_id")
             .select("users.*", "participants.first_name", "participants.last_name")
             .orderBy("users.user_id");
-        res.render("users", { users, user: req.session.username, isLoggedIn: req.session.isLoggedIn, role: req.session.role });
+        
+        const searchQuery = req.query.q;
+        if (searchQuery) {
+            query = query.where(builder => {
+                builder.where('users.username', 'ilike', `%${searchQuery}%`)
+                       .orWhere('participants.first_name', 'ilike', `%${searchQuery}%`)
+                       .orWhere('participants.last_name', 'ilike', `%${searchQuery}%`)
+                       // Added full name search here too!
+                       .orWhereRaw("CONCAT(participants.first_name, ' ', participants.last_name) ILIKE ?", [`%${searchQuery}%`]);
+            });
+        }
+
+        const users = await query;
+        res.render("users", { 
+            users, 
+            user: req.session.username, 
+            isLoggedIn: req.session.isLoggedIn, 
+            role: req.session.role,
+            query: searchQuery 
+        });
     } catch (err) { 
         console.error(err);
         res.status(500).send("Error retrieving users"); 

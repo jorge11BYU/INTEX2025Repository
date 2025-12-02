@@ -16,6 +16,17 @@
             <a href="/users/add" class="btn btn-success">Create New User</a>
         </div>
 
+        <!-- SEARCH BAR -->
+        <form action="/users" method="GET" class="mb-4">
+            <div class="input-group shadow-sm">
+                <input type="text" name="q" class="form-control border-0" placeholder="Search by username or participant name..." value="<%= typeof query !== 'undefined' ? query : '' %>">
+                <button type="submit" class="btn btn-primary px-4">Search</button>
+                <% if (typeof query !== 'undefined' && query) { %>
+                    <a href="/users" class="btn btn-secondary px-3">Clear</a>
+                <% } %>
+            </div>
+        </form>
+
         <div class="table-responsive bg-white shadow-sm p-3 rounded">
             <table class="table table-hover">
                 <thead class="table-light">
@@ -28,6 +39,9 @@
                     </tr>
                 </thead>
                 <tbody>
+                    <% if (users.length === 0) { %>
+                        <tr><td colspan="5" class="text-center text-muted py-4">No records found.</td></tr>
+                    <% } %>
                     <% users.forEach(u => { %>
                         <tr>
                             <td><%= u.user_id %></td>
