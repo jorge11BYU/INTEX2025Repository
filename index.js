@@ -1,10 +1,3 @@
-// npm init -y to start the setup
-// npm install express ejs dotenv knex pg to install dependancies
-// npm install --save-dev nodemon
-// instead of doing node index.js do npm run dev
-// test again
-
-// import necessary modules
 import express from "express";
 import knex from "knex";
 import path from "path";
@@ -12,21 +5,19 @@ import { fileURLToPath } from "url";
 import 'dotenv/config'; 
 import session from "express-session";
 
-// This lets us access the current path and directory path
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-//Set up server and port
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware setup
+// Middleware
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
-// This allows req.body to be used for POST requests.
+app.use(express.static(path.join(__dirname, "public"))); // Allow access to CSS/Images
 app.use(express.urlencoded({ extended: true }));
 
-// Knex configuration
+// Database Connection
 const db = knex({
     client: "pg",
     connection: {
@@ -39,106 +30,208 @@ const db = knex({
     }
 });
 
-// Sets up session management so you can track the login state of a user.
-app.use(
-    session(
-        {
-            secret: process.env.SESSION_SECRET,
-            resave: false,
-            saveUninitialized: false,
-        }
-    )
-);
+// Session Config
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false } // Set to true if using HTTPS in production
+}));
 
-// Global authentication middleware - runs on EVERY request
-// This lets users only access the login page if not logged in.
-app.use((req, res, next) => {
-    // Skip authentication for login routes
-    if (req.path === '/' || req.path === '/login' || req.path === '/logout') {
-        //continue with the request path
-        return next();
-    }
-    
-    // Check if user is logged in for all other routes
+// --- CUSTOM MIDDLEWARE ---
+
+// 1. Check if user is logged in
+const isLoggedIn = (req, res, next) => {
     if (req.session.isLoggedIn) {
-        next(); // If user is logged in, continue
-    } 
-    else {
-        res.render("login", { error_message: "Please log in to access this page" });
-    }
-});
-
-// Root route
-app.get("/", (req, res) => {
-  if (!req.session.isLoggedIn) {
-    return res.render("login", { error_message: "", title: "Login" });
-  }
-
-  // Just render the home page without querying the books table
-  // Passing empty bookList[] in case your ejs file still tries to loop through it
-  res.render("index", { 
-    username: req.session.username
-  });
-});
-
-
-// Login route
-app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-
-  console.log("--- LOGIN ATTEMPT ---");
-  console.log("Username submitted:", username);
-  console.log("Password submitted:", password);
-
-  try {
-    // Find user by username first
-    const user = await db("users").where({ username: username }).first();
-
-    console.log("Database result for user:", user);
-
-    // Check if user exists and password matches
-    if (user && user.password === password) {
-      console.log("SUCCESS: Credentials match.");
-      req.session.isLoggedIn = true;
-      req.session.username = user.username;
-      
-      // Explicitly save session before redirecting to ensure race conditions don't kill the cookie
-      req.session.save(err => {
-        if (err) {
-            console.log("Session save error:", err);
-            return res.status(500).send("Session error");
-        }
-        res.redirect("/");
-      });
-      
+        next();
     } else {
-      console.log("FAILURE: User not found OR password mismatch.");
-      // Invalid login — still pass a title for the template
-      res.render("login", { 
-        error_message: "Invalid login", 
-        title: "Login" 
-      });
+        res.redirect('/login');
     }
-  } catch (err) {
-    console.error("CRITICAL Login error:", err);
+};
+
+// 2. Check if user is a Manager (for CRUD operations)
+const isManager = (req, res, next) => {
+    if (req.session.isLoggedIn && req.session.role === 'manager') {
+        next();
+    } else {
+        res.status(403).send("Access Denied: Managers only.");
+    }
+};
+
+// --- ROUTES ---
+
+// 1. Public Landing Page (No Login Required)
+app.get("/", (req, res) => {
+    res.render("landing", { 
+        isLoggedIn: req.session.isLoggedIn, 
+        username: req.session.username 
+    });
+});
+
+// 2. Auth Routes
+app.get("/login", (req, res) => {
     res.render("login", { 
-      error_message: "Login Error: " + err.message, 
-      title: "Login" 
+        error_message: null,
+        isLoggedIn: req.session.isLoggedIn 
     });
-  }
 });
 
-
-// Logout route
-app.get("/logout", (req, res) => {
-    // Get rid of the session object
-    req.session.destroy((err) => {
-        if (err) {
-            console.log(err);
+app.post("/login", async (req, res) => {
+    const { username, password } = req.body;
+    try {
+        const user = await db("users").where({ username }).first();
+        if (user && user.password === password) {
+            req.session.isLoggedIn = true;
+            req.session.username = user.username;
+            req.session.role = user.role; // Store role in session!
+            req.session.save(() => res.redirect("/dashboard"));
+        } else {
+            res.render("login", { 
+                error_message: "Invalid credentials",
+                isLoggedIn: false
+            });
         }
-        res.redirect("/");
+    } catch (err) {
+        console.error(err);
+        res.render("login", { 
+            error_message: "System Error",
+            isLoggedIn: false
+        });
+    }
+});
+
+app.get("/logout", (req, res) => {
+    req.session.destroy(() => res.redirect("/"));
+});
+
+// 3. Private Dashboard
+app.get("/dashboard", isLoggedIn, async (req, res) => {
+    // Determine greeting based on time
+    const hour = new Date().getHours();
+    let greeting = "Good Morning";
+    if (hour > 12) greeting = "Good Afternoon";
+    if (hour > 17) greeting = "Good Evening";
+
+    let stats = { participants: 0, events: 0, donations: 0 };
+    try {
+        const pCount = await db("participants").count("participant_id as count").first();
+        // const eCount = await db("event_occurrences").count("event_occurrence_id as count").first();
+        // const dCount = await db("donations").count("donation_id as count").first();
+        
+        stats.participants = pCount ? pCount.count : 0;
+        // stats.events = eCount ? eCount.count : 0;
+        // stats.donations = dCount ? dCount.count : 0;
+    } catch (e) {
+        console.log("Error fetching stats:", e);
+    }
+
+    res.render("dashboard", {
+        user: req.session.username,
+        role: req.session.role,
+        isLoggedIn: req.session.isLoggedIn, // FIXED: Added this
+        greeting: greeting,
+        stats: stats
     });
 });
 
-// start server
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// 4. Participants Management (The CRUD Example)
+
+// READ (List)
+app.get("/participants", isLoggedIn, async (req, res) => {
+    try {
+        const participants = await db("participants").select("*").orderBy("participant_id");
+        res.render("participants", { 
+            participants, 
+            role: req.session.role,
+            isManager: req.session.role === 'manager',
+            user: req.session.username,       // FIXED: Added this
+            isLoggedIn: req.session.isLoggedIn // FIXED: Added this
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error retrieving participants");
+    }
+});
+
+// CREATE (Form - Manager Only)
+app.get("/participants/add", isManager, (req, res) => {
+    res.render("participants_add", {
+        user: req.session.username,       // FIXED: Added this
+        isLoggedIn: req.session.isLoggedIn // FIXED: Added this
+    });
+});
+
+// CREATE (Submit - Manager Only)
+app.post("/participants/add", isManager, async (req, res) => {
+    try {
+        await db("participants").insert({
+            first_name: req.body.first_name,
+            last_name: req.body.last_name,
+            email: req.body.email,
+            phone: req.body.phone,
+            dob: req.body.dob || null, // Handle empty dates
+            city: req.body.city,
+            state: req.body.state,
+            zip_code: req.body.zip_code,
+            school_or_employer: req.body.school_or_employer
+        });
+        res.redirect("/participants");
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error adding participant");
+    }
+});
+
+// UPDATE (Form - Manager Only)
+app.get("/participants/edit/:id", isManager, async (req, res) => {
+    try {
+        const participant = await db("participants").where({ participant_id: req.params.id }).first();
+        res.render("participants_edit", { 
+            participant,
+            user: req.session.username,       // FIXED: Added this
+            isLoggedIn: req.session.isLoggedIn // FIXED: Added this
+        });
+    } catch (err) {
+        res.status(404).send("Participant not found");
+    }
+});
+
+// UPDATE (Submit - Manager Only)
+app.post("/participants/edit/:id", isManager, async (req, res) => {
+    try {
+        await db("participants").where({ participant_id: req.params.id }).update({
+            first_name: req.body.first_name,
+            last_name: req.body.last_name,
+            email: req.body.email,
+            phone: req.body.phone,
+            dob: req.body.dob || null,
+            city: req.body.city,
+            state: req.body.state,
+            zip_code: req.body.zip_code,
+            school_or_employer: req.body.school_or_employer
+        });
+        res.redirect("/participants");
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error updating participant");
+    }
+});
+
+// DELETE (Manager Only)
+app.post("/participants/delete/:id", isManager, async (req, res) => {
+    try {
+        await db("participants").where({ participant_id: req.params.id }).del();
+        res.redirect("/participants");
+    } catch (err) {
+        console.error(err);
+        // This usually fails if the participant is linked to other tables (Foreign Key)
+        res.status(500).send("Error deleting participant. They might be linked to registrations or donations.");
+    }
+});
+
+// 5. The "Teapot" Requirement
+app.get("/teapot", (req, res) => {
+    res.status(418).send("418: I'm a little teapot, short and stout. This server refuses to brew coffee because it is, permanently, a teapot.");
+});
+
+app.listen(PORT, () => console.log(`Ella Rises running on port ${PORT}`));
