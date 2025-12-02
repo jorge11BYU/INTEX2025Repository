@@ -41,17 +41,23 @@
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label">First Name</label>
-                                    <input type="text" name="first_name" class="form-control" required placeholder="Jane">
+                                    <!-- UPDATED: Autofill First Name -->
+                                    <input type="text" name="first_name" class="form-control" required placeholder="Jane" 
+                                           value="<%= (typeof participant !== 'undefined' && participant) ? participant.first_name : '' %>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Last Name</label>
-                                    <input type="text" name="last_name" class="form-control" required placeholder="Doe">
+                                    <!-- UPDATED: Autofill Last Name -->
+                                    <input type="text" name="last_name" class="form-control" required placeholder="Doe"
+                                           value="<%= (typeof participant !== 'undefined' && participant) ? participant.last_name : '' %>">
                                 </div>
                             </div>
 
                             <div class="mb-4">
                                 <label class="form-label">Email Address</label>
-                                <input type="email" name="email" class="form-control" required placeholder="jane@example.com">
+                                <!-- UPDATED: Autofill Email -->
+                                <input type="email" name="email" class="form-control" required placeholder="jane@example.com"
+                                       value="<%= (typeof participant !== 'undefined' && participant) ? participant.email : '' %>">
                                 <div class="form-text">We'll send your receipt here.</div>
                             </div>
 

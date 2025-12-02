@@ -13,13 +13,18 @@
             <h2>Donation History</h2>
             <% if (isManager) { %>
                 <a href="/donations/add" class="btn btn-success">Record New Donation</a>
+            <% } else { %>
+                <a href="/donate" class="btn btn-success">Make a Donation</a>
             <% } %>
         </div>
 
         <!-- SEARCH BAR -->
         <form action="/donations" method="GET" class="mb-4">
             <div class="input-group shadow-sm">
-                <input type="text" name="q" class="form-control border-0" placeholder="Search by donor name or amount..." value="<%= typeof query !== 'undefined' ? query : '' %>">
+                <!-- Dynamic Placeholder based on role -->
+                <input type="text" name="q" class="form-control border-0" 
+                       placeholder="<%= isManager ? 'Search by donor name or amount...' : 'Search by amount...' %>" 
+                       value="<%= typeof query !== 'undefined' ? query : '' %>">
                 <button type="submit" class="btn btn-primary px-4">Search</button>
                 <% if (typeof query !== 'undefined' && query) { %>
                     <a href="/donations" class="btn btn-secondary px-3">Clear</a>

@@ -16,10 +16,10 @@
             <a href="/users/add" class="btn btn-success">Create New User</a>
         </div>
 
-        <!-- SEARCH BAR -->
+        <!-- SEARCH BAR (Updated Placeholder) -->
         <form action="/users" method="GET" class="mb-4">
             <div class="input-group shadow-sm">
-                <input type="text" name="q" class="form-control border-0" placeholder="Search by username or participant name..." value="<%= typeof query !== 'undefined' ? query : '' %>">
+                <input type="text" name="q" class="form-control border-0" placeholder="Search by username, role, or participant name..." value="<%= typeof query !== 'undefined' ? query : '' %>">
                 <button type="submit" class="btn btn-primary px-4">Search</button>
                 <% if (typeof query !== 'undefined' && query) { %>
                     <a href="/users" class="btn btn-secondary px-3">Clear</a>

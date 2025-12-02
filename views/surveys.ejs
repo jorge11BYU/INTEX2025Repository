@@ -19,7 +19,10 @@
         <!-- SEARCH BAR -->
         <form action="/surveys" method="GET" class="mb-4">
             <div class="input-group shadow-sm">
-                <input type="text" name="q" class="form-control border-0" placeholder="Search by name, event, or comments..." value="<%= typeof query !== 'undefined' ? query : '' %>">
+                <!-- Dynamic Placeholder based on role -->
+                <input type="text" name="q" class="form-control border-0" 
+                       placeholder="<%= isManager ? 'Search by name, event, date, or comments...' : 'Search by event, date, or comments...' %>" 
+                       value="<%= typeof query !== 'undefined' ? query : '' %>">
                 <button type="submit" class="btn btn-primary px-4">Search</button>
                 <% if (typeof query !== 'undefined' && query) { %>
                     <a href="/surveys" class="btn btn-secondary px-3">Clear</a>
