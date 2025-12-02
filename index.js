@@ -51,12 +51,15 @@ const isManager = (req, res, next) => {
 
 // --- ROUTES ---
 
-// 1. Public Pages
+// 1. Landing & Public Donation
 app.get("/", (req, res) => {
     res.render("landing", { isLoggedIn: req.session.isLoggedIn, username: req.session.username, role: req.session.role });
 });
 
 app.get("/donate", (req, res) => {
+    if (req.session.isLoggedIn) {
+        return res.redirect("/donations");
+    }
     res.render("donate_public", { user: req.session.username, isLoggedIn: req.session.isLoggedIn, role: req.session.role, success_message: null });
 });
 
@@ -81,6 +84,7 @@ app.post("/donate", async (req, res) => {
 
 // 2. Auth Routes
 app.get("/login", (req, res) => res.render("login", { error_message: null, isLoggedIn: req.session.isLoggedIn }));
+
 app.post("/login", async (req, res) => {
     try {
         const user = await db("users").where({ username: req.body.username }).first();
@@ -88,14 +92,17 @@ app.post("/login", async (req, res) => {
             req.session.isLoggedIn = true;
             req.session.username = user.username;
             req.session.role = user.role;
+            req.session.participantId = user.participant_id; // Link to data
             req.session.save(() => res.redirect("/dashboard"));
         } else {
             res.render("login", { error_message: "Invalid credentials", isLoggedIn: false });
         }
     } catch (err) {
+        console.error(err);
         res.render("login", { error_message: "System Error", isLoggedIn: false });
     }
 });
+
 app.get("/logout", (req, res) => req.session.destroy(() => res.redirect("/")));
 
 // 3. Dashboard
@@ -103,24 +110,41 @@ app.get("/dashboard", isLoggedIn, async (req, res) => {
     const hour = new Date().getHours();
     let greeting = hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening";
     let stats = { participants: 0, events: 0, donations: 0 };
+
     try {
-        const p = await db("participants").count("participant_id as count").first();
-        const d = await db("donations").count("donation_id as count").first();
-        const e = await db("event_occurrences").count("event_occurrence_id as count").first();
-        stats = { participants: p.count, donations: d.count, events: e.count };
-    } catch (e) {}
+        if (req.session.role === 'manager' || req.session.username === 'superuser') {
+            const p = await db("participants").count("participant_id as count").first();
+            const d = await db("donations").count("donation_id as count").first();
+            const e = await db("event_occurrences").count("event_occurrence_id as count").first();
+            stats = { participants: p.count, donations: d.count, events: e.count };
+        } else {
+            const myId = req.session.participantId;
+            stats.participants = myId ? 1 : 0; 
+            if (myId) {
+                const d = await db("donations").where({ participant_id: myId }).count("donation_id as count").first();
+                const e = await db("registrations").where({ participant_id: myId }).count("registration_id as count").first();
+                stats.donations = d.count;
+                stats.events = e.count;
+            }
+        }
+    } catch (e) { console.error(e); }
+    
     res.render("dashboard", { user: req.session.username, role: req.session.role, isLoggedIn: true, greeting, stats });
 });
 
-// 4. PARTICIPANTS (View: Everyone, Edit: Manager)
+// 4. PARTICIPANTS
 app.get("/participants", isLoggedIn, async (req, res) => {
-    const participants = await db("participants").select("*").orderBy("participant_id");
+    let query = db("participants").select("*").orderBy("participant_id");
+    if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
+        query = query.where('participant_id', req.session.participantId);
+    }
+    const participants = await query;
     res.render("participants", { participants, role: req.session.role, isManager: req.session.role === 'manager', user: req.session.username, isLoggedIn: true });
 });
 app.get("/participants/add", isManager, (req, res) => res.render("participants_add", { user: req.session.username, isLoggedIn: true, returnTo: req.query.returnTo }));
 app.post("/participants/add", isManager, async (req, res) => {
     try {
-        const [newP] = await db("participants").insert(req.body).returning('participant_id'); // Ensure body matches DB cols or filter manually
+        const [newP] = await db("participants").insert(req.body).returning('participant_id');
         if (req.body.returnTo === 'donations_add') res.redirect(`/donations/add?newParticipantId=${newP.participant_id}`);
         else res.redirect("/participants");
     } catch (err) { console.error(err); res.status(500).send("Error adding participant"); }
@@ -141,12 +165,16 @@ app.post("/participants/delete/:id", isManager, async (req, res) => {
     res.redirect("/participants");
 });
 
-// 5. DONATIONS (View: Everyone, Edit: Manager)
+// 5. DONATIONS
 app.get("/donations", isLoggedIn, async (req, res) => {
-    const donations = await db("donations")
+    let query = db("donations")
         .join("participants", "donations.participant_id", "participants.participant_id")
         .select("donations.*", "participants.first_name", "participants.last_name")
         .orderBy("donations.donation_date", "desc");
+    if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
+        query = query.where('donations.participant_id', req.session.participantId);
+    }
+    const donations = await query;
     res.render("donations", { donations, role: req.session.role, isManager: req.session.role === 'manager', user: req.session.username, isLoggedIn: true });
 });
 app.get("/donations/add", isManager, async (req, res) => {
@@ -171,14 +199,18 @@ app.post("/donations/delete/:id", isManager, async (req, res) => {
     res.redirect("/donations");
 });
 
-// 6. SURVEYS (View: Everyone, Edit: Manager)
+// 6. SURVEYS
 app.get("/surveys", isLoggedIn, async (req, res) => {
-    const surveys = await db("surveys")
+    let query = db("surveys")
         .join("participants", "surveys.participant_id", "participants.participant_id")
         .join("event_occurrences", "surveys.event_occurrence_id", "event_occurrences.event_occurrence_id")
         .join("event_templates", "event_occurrences.event_template_id", "event_templates.event_template_id")
         .select("surveys.*", "participants.first_name", "participants.last_name", "event_templates.event_name", "event_occurrences.start_time")
         .orderBy("surveys.submission_date", "desc");
+    if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
+        query = query.where('surveys.participant_id', req.session.participantId);
+    }
+    const surveys = await query;
     res.render("surveys", { surveys, role: req.session.role, isManager: req.session.role === 'manager', user: req.session.username, isLoggedIn: true });
 });
 app.get("/surveys/add", isManager, async (req, res) => {
@@ -207,13 +239,18 @@ app.post("/surveys/delete/:id", isManager, async (req, res) => {
     res.redirect("/surveys");
 });
 
-// 7. EVENTS (New Section)
+// 7. EVENTS
 app.get("/events", isLoggedIn, async (req, res) => {
-    const events = await db("event_occurrences")
+    let query = db("event_occurrences")
         .join("event_templates", "event_occurrences.event_template_id", "event_templates.event_template_id")
         .join("locations", "event_occurrences.location_id", "locations.location_id")
         .select("event_occurrences.*", "event_templates.event_name", "event_templates.event_description", "locations.location_name")
         .orderBy("event_occurrences.start_time", "desc");
+    if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
+        query = query.join("registrations", "event_occurrences.event_occurrence_id", "registrations.event_occurrence_id")
+                     .where("registrations.participant_id", req.session.participantId);
+    }
+    const events = await query;
     res.render("events", { events, role: req.session.role, isManager: req.session.role === 'manager', user: req.session.username, isLoggedIn: true });
 });
 app.get("/events/add", isManager, async (req, res) => {
@@ -240,13 +277,17 @@ app.post("/events/delete/:id", isManager, async (req, res) => {
     res.redirect("/events");
 });
 
-// 8. MILESTONES (New Section)
+// 8. MILESTONES
 app.get("/milestones", isLoggedIn, async (req, res) => {
-    const milestones = await db("milestones")
+    let query = db("milestones")
         .join("participants", "milestones.participant_id", "participants.participant_id")
         .join("milestone_types", "milestones.milestone_type_id", "milestone_types.milestone_type_id")
         .select("milestones.*", "participants.first_name", "participants.last_name", "milestone_types.milestone_title")
         .orderBy("milestones.milestone_date", "desc");
+    if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
+        query = query.where('milestones.participant_id', req.session.participantId);
+    }
+    const milestones = await query;
     res.render("milestones", { milestones, role: req.session.role, isManager: req.session.role === 'manager', user: req.session.username, isLoggedIn: true });
 });
 app.get("/milestones/add", isManager, async (req, res) => {
@@ -271,6 +312,42 @@ app.post("/milestones/edit/:id", isManager, async (req, res) => {
 app.post("/milestones/delete/:id", isManager, async (req, res) => {
     await db("milestones").where({ milestone_id: req.params.id }).del();
     res.redirect("/milestones");
+});
+
+// 9. USER MANAGEMENT
+app.get("/users", isManager, async (req, res) => {
+    try {
+        const users = await db("users")
+            .leftJoin("participants", "users.participant_id", "participants.participant_id")
+            .select("users.*", "participants.first_name", "participants.last_name")
+            .orderBy("users.user_id");
+        res.render("users", { users, user: req.session.username, isLoggedIn: req.session.isLoggedIn, role: req.session.role });
+    } catch (err) { 
+        console.error(err);
+        res.status(500).send("Error retrieving users"); 
+    }
+});
+app.get("/users/add", isManager, async (req, res) => {
+    const participants = await db("participants").select("participant_id", "first_name", "last_name").orderBy("last_name");
+    res.render("users_add", { participants, user: req.session.username, isLoggedIn: true });
+});
+app.post("/users/add", isManager, async (req, res) => {
+    await db("users").insert({ username: req.body.username, password: req.body.password, role: req.body.role, participant_id: req.body.participant_id || null });
+    res.redirect("/users");
+});
+app.get("/users/edit/:id", isManager, async (req, res) => {
+    const userToEdit = await db("users").where({ user_id: req.params.id }).first();
+    const participants = await db("participants").select("participant_id", "first_name", "last_name").orderBy("last_name");
+    res.render("users_edit", { userToEdit, participants, user: req.session.username, isLoggedIn: true });
+});
+app.post("/users/edit/:id", isManager, async (req, res) => {
+    await db("users").where({ user_id: req.params.id }).update({ username: req.body.username, password: req.body.password, role: req.body.role, participant_id: req.body.participant_id || null });
+    res.redirect("/users");
+});
+app.post("/users/delete/:id", isManager, async (req, res) => {
+    if (parseInt(req.params.id) === req.session.user_id) return res.status(400).send("Cannot delete self."); // Basic safeguard
+    await db("users").where({ user_id: req.params.id }).del();
+    res.redirect("/users");
 });
 
 // Teapot

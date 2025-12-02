@@ -1,18 +1,9 @@
 /* Ella Rises Theme */
 :root {
-    /* Replace these HEX codes with the specific ones from your logo */
-    --primary-color: #3A3F3B; /* Example: Coral/Red */
-    --secondary-color: #F9F5EA; /* Off-white */
-    --accent-color: #F9AFB1; /* Navy Blue */
-    --text-dark: #333333;
-    --text-light: #ffffff;
-}
-/* --- 1. THEME VARIABLES --- */
-:root {
     /* Ella Rises Brand Colors */
-    --primary-color: #3A3F3B; 
-    --secondary-color: #F9F5EA; 
-    --accent-color: #F9AFB1;
+    --primary-color: #3A3F3B; /* Dark Grey */
+    --secondary-color: #F9F5EA; /* Off-white */
+    --accent-color: #F9AFB1; /* Pink */
     
     /* Text Colors */
     --text-dark: #333333;
@@ -22,7 +13,7 @@
 /* --- 2. GLOBAL STYLES --- */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--secondary-color); /* This applies the background color! */
+    background-color: var(--secondary-color);
     color: var(--text-dark);
 }
 
@@ -30,19 +21,23 @@ body {
 .navbar-custom {
     background-color: var(--accent-color);
 }
+/* Navbar links need to be dark because the background is light pink */
 .navbar-custom .navbar-brand, .navbar-custom .nav-link {
-    color: var(--text-light);
+    color: var(--text-dark) !important; 
+    font-weight: 600;
 }
 .navbar-custom .nav-link:hover {
-    color: var(--primary-color);
+    color: var(--primary-color) !important;
+    text-decoration: underline;
 }
 
 /* --- 4. LANDING PAGE HERO SECTION --- */
 .hero-section {
+    /* Using your Pink accent with opacity for the overlay */
     background: linear-gradient(rgba(249, 175, 177, .7), rgba(249, 175, 177, .7)), url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1351&q=80');
     background-size: cover;
     background-position: center;
-    color: white;
+    color: var(--text-dark); /* Changed to dark text for better contrast on pink */
     padding: 100px 0;
     text-align: center;
 }
@@ -65,7 +60,19 @@ body {
 
 /* --- 6. BOOTSTRAP OVERRIDES --- */
 
-/* Red Buttons */
+/* Red Buttons (btn-danger) -> Now mapped to your PRIMARY (Dark Grey) */
+/* Used for "Supporter Login" */
+.btn-danger {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: var(--text-light) !important;
+}
+.btn-danger:hover {
+    background-color: var(--primary-color) !important;
+    filter: brightness(1.2); /* Lighten slightly on hover */
+}
+
+/* Primary Buttons (btn-primary) -> Dark Grey */
 .btn-primary {
     background-color: var(--primary-color) !important;
     border-color: var(--primary-color) !important;
@@ -73,20 +80,18 @@ body {
 }
 .btn-primary:hover {
     background-color: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
-    filter: brightness(0.85);
+    filter: brightness(1.2);
 }
 
-/* Navy Buttons */
+/* Navy/Success Buttons (btn-success) -> Pink Accent */
 .btn-success {
     background-color: var(--accent-color) !important;
     border-color: var(--accent-color) !important;
-    color: var(--text-light) !important;
+    color: var(--text-dark) !important; /* Dark text on pink background */
 }
 .btn-success:hover {
     background-color: var(--accent-color) !important;
-    border-color: var(--accent-color) !important;
-    filter: brightness(1.2);
+    filter: brightness(0.95); /* Darken slightly on hover */
 }
 
 /* Outline Buttons */
@@ -96,7 +101,7 @@ body {
 }
 .btn-outline-primary:hover {
     background-color: var(--primary-color) !important;
-    color: white !important;
+    color: var(--text-light) !important;
 }
 
 /* Text Utilities */
@@ -105,4 +110,15 @@ body {
 }
 .bg-primary {
     background-color: var(--primary-color) !important;
+}
+
+/* Donation Amounts (text-success was Green) -> Now Dark Grey */
+.text-success {
+    color: var(--primary-color) !important;
+}
+
+/* Milestones Badges (bg-info was Blue) -> Now Pink Accent */
+.bg-info {
+    background-color: var(--accent-color) !important;
+    color: var(--text-dark) !important;
 }
