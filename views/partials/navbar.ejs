@@ -1,7 +1,6 @@
 <nav class="navbar navbar-expand-lg navbar-custom shadow-sm">
     <div class="container">
       <a class="navbar-brand" href="/">
-        <!-- LOGO IMAGE: Ensure you have a file named 'logo.png' in 'public/images/' -->
         <img src="/images/logo.png" alt="Ella Rises" height="50">
       </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -11,52 +10,47 @@
         <ul class="navbar-nav ms-auto align-items-center">
           <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
           
-          <!-- PUBLIC DONATE LINK (Only visible to non-logged in users) -->
           <% if (typeof isLoggedIn === 'undefined' || !isLoggedIn) { %>
             <li class="nav-item"><a class="nav-link fw-bold" href="/donate">Donate</a></li>
           <% } %>
-          
-          <!-- LOGGED IN USER LINKS -->
+
           <% if (typeof isLoggedIn !== 'undefined' && isLoggedIn) { %>
             <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
             
-            <!-- DROPDOWN MENU FOR DATA TABLES -->
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                 Menu
               </a>
-              <!-- STYLED DROPDOWN: Added border-top and padding -->
               <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="navbarDropdown" style="border-top: 4px solid var(--primary-color) !important;">
-                
-                <!-- Section 1: Main Data -->
                 <li><h6 class="dropdown-header text-uppercase small" style="color: var(--primary-color); font-weight: bold;">Engagement</h6></li>
-                
-                <!-- DYNAMIC LINK TEXT: 'Participants' for Managers, 'Personal Info' for Users -->
                 <li><a class="dropdown-item" href="/participants"><%= (typeof role !== 'undefined' && role === 'manager') ? 'Participants' : 'Personal Info' %></a></li>
-                
                 <li><a class="dropdown-item" href="/events">Events</a></li>
                 <li><a class="dropdown-item" href="/surveys">Surveys</a></li>
                 <li><a class="dropdown-item" href="/milestones">Milestones</a></li>
-                
                 <li><hr class="dropdown-divider"></li>
-                
-                <!-- Section 2: Financials -->
                 <li><h6 class="dropdown-header text-uppercase small" style="color: var(--primary-color); font-weight: bold;">Support</h6></li>
                 <li><a class="dropdown-item" href="/donations">Donate</a></li>
-                
-                <!-- MANAGER ONLY SECTION -->
                 <% if (typeof role !== 'undefined' && role === 'manager') { %>
                    <li><hr class="dropdown-divider"></li>
                    <li><h6 class="dropdown-header text-uppercase small" style="color: var(--primary-color); font-weight: bold;">Admin Controls</h6></li>
                    <li><a class="dropdown-item" href="/users">Manage Users</a></li>
                 <% } %>
-
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item text-muted" href="/teapot"><small>🫖 Teapot</small></a></li>
               </ul>
             </li>
+
+            <li class="nav-item ms-3 me-2">
+                <a href="/participants" title="Update Profile Photo">
+                    <% if (typeof userProfilePic !== 'undefined' && userProfilePic) { %>
+                        <img src="<%= userProfilePic %>" alt="User" class="rounded-circle border border-white shadow-sm" style="width: 40px; height: 40px; object-fit: cover;">
+                    <% } else { %>
+                        <div class="rounded-circle bg-light text-secondary d-flex justify-content-center align-items-center shadow-sm border border-white" style="width: 40px; height: 40px; font-weight: bold;">
+                            <%= (typeof user !== 'undefined' && user) ? user.charAt(0).toUpperCase() : 'U' %>
+                        </div>
+                    <% } %>
+                </a>
+            </li>
             
-            <li class="nav-item ms-lg-2">
+            <li class="nav-item">
                 <a class="nav-link btn btn-sm btn-outline-light px-3" href="/logout">Logout</a>
             </li>
           <% } else { %>
