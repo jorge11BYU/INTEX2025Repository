@@ -11,6 +11,33 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// --- DEBUG ROUTE (Delete this after fixing!) ---
+app.get("/debug-db", async (req, res) => {
+    try {
+        // Attempt a simple connection
+        await db.raw('SELECT 1+1 as result');
+        res.send(`
+            <h1>Database Connection: SUCCESS ✅</h1>
+            <p><strong>Connected to:</strong> ${process.env.RDS_HOSTNAME}</p>
+            <p><strong>User:</strong> ${process.env.RDS_USERNAME}</p>
+            <p><strong>Database:</strong> ${process.env.RDS_DB_NAME}</p>
+        `);
+    } catch (err) {
+        res.send(`
+            <h1>Database Connection: FAILED ❌</h1>
+            <p><strong>Error Message:</strong> ${err.message}</p>
+            <hr>
+            <h3>What the server is trying to use:</h3>
+            <ul>
+                <li><strong>Host:</strong> ${process.env.RDS_HOSTNAME || '(Not Set)'}</li>
+                <li><strong>User:</strong> ${process.env.RDS_USERNAME || '(Not Set)'}</li>
+                <li><strong>Database:</strong> ${process.env.RDS_DB_NAME || '(Not Set)'}</li>
+                <li><strong>Password Length:</strong> ${process.env.RDS_PASSWORD ? process.env.RDS_PASSWORD.length : '0'} characters</li>
+            </ul>
+        `);
+    }
+});
+
 // Middleware
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
