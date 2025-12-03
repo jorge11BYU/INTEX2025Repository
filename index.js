@@ -5,6 +5,11 @@ import { fileURLToPath } from "url";
 import 'dotenv/config'; 
 import session from "express-session";
 
+// --- NEW IMPORTS FOR FILE UPLOAD ---
+import { S3Client } from "@aws-sdk/client-s3";
+import multer from "multer";
+import multerS3 from "multer-s3";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -38,7 +43,41 @@ app.use(session({
     cookie: { secure: false }
 }));
 
-// --- MIDDLEWARE ---
+// --- DEBUGGING START ---
+console.log("------------------------------------------------");
+console.log("DEBUG: Checking Environment Variables");
+console.log("Region:", process.env.AWS_REGION);
+console.log("Bucket:", process.env.S3_BUCKET_NAME);
+console.log("Access Key ID:", process.env.AWS_ACCESS_KEY_ID ? "✔ LOADED (" + process.env.AWS_ACCESS_KEY_ID.substring(0, 5) + "...)" : "❌ MISSING (Undefined)");
+console.log("Secret Access Key:", process.env.AWS_SECRET_ACCESS_KEY ? "✔ LOADED" : "❌ MISSING (Undefined)");
+console.log("------------------------------------------------");
+// --- DEBUGGING END ---
+
+// --- AWS S3 & MULTER CONFIGURATION ---
+const s3 = new S3Client({
+    region: process.env.AWS_REGION, // Ensure this is set in .env
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,     // Ensure this is set in .env
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY // Ensure this is set in .env
+    }
+});
+
+const upload = multer({
+    storage: multerS3({
+        s3: s3,
+        bucket: process.env.S3_BUCKET_NAME, // Ensure this is set in .env
+        acl: 'public-read', // Makes the uploaded file readable by browsers
+        contentType: multerS3.AUTO_CONTENT_TYPE, // Automatically detects jpeg/png
+        key: function (req, file, cb) {
+            // Naming convention: profile-pics/timestamp-filename
+            cb(null, `profile-pics/${Date.now().toString()}-${file.originalname}`);
+        }
+    })
+});
+
+// --- CUSTOM MIDDLEWARE ---
+
+// 1. Auth Checkers
 const isLoggedIn = (req, res, next) => {
     if (req.session.isLoggedIn) next();
     else res.redirect('/login');
@@ -49,16 +88,27 @@ const isManager = (req, res, next) => {
     else res.status(403).send("Access Denied: Managers only.");
 };
 
+// 2. Global View Variables (NEW)
+// This passes the user info & profile picture to EVERY .ejs file automatically
+app.use(async (req, res, next) => {
+    res.locals.isLoggedIn = req.session.isLoggedIn || false;
+    res.locals.user = req.session.username || null;
+    res.locals.role = req.session.role || null;
+    res.locals.userProfilePic = req.session.profilePictureUrl || null;
+    next();
+});
+
+
 // --- ROUTES ---
 
 // 1. Landing & Public Donation
 app.get("/", (req, res) => {
-    res.render("landing", { isLoggedIn: req.session.isLoggedIn, username: req.session.username, role: req.session.role });
+    res.render("landing");
 });
 
-// PUBLIC SIGNUP PAGE (NEW)
+// PUBLIC SIGNUP PAGE
 app.get("/signup", (req, res) => {
-    res.render("signup", { error_message: null, isLoggedIn: false });
+    res.render("signup", { error_message: null });
 });
 
 app.post("/signup", async (req, res) => {
@@ -89,7 +139,7 @@ app.post("/signup", async (req, res) => {
 
     } catch (err) {
         console.error(err);
-        res.render("signup", { error_message: "Error creating account. Username or Email might already be taken.", isLoggedIn: false });
+        res.render("signup", { error_message: "Error creating account. Username or Email might already be taken." });
     }
 });
 
@@ -97,7 +147,7 @@ app.get("/donate", (req, res) => {
     if (req.session.isLoggedIn) {
         return res.redirect("/donations");
     }
-    res.render("donate_public", { user: req.session.username, isLoggedIn: req.session.isLoggedIn, role: req.session.role, success_message: null });
+    res.render("donate_public", { success_message: null });
 });
 
 app.post("/donate", async (req, res) => {
@@ -112,7 +162,7 @@ app.post("/donate", async (req, res) => {
             participantId = newP.participant_id;
         }
         await db("donations").insert({ participant_id: participantId, donation_amount, donation_date: new Date() });
-        res.render("donate_public", { user: req.session.username, isLoggedIn: req.session.isLoggedIn, role: req.session.role, success_message: `Thank you, ${first_name}!` });
+        res.render("donate_public", { success_message: `Thank you, ${first_name}!` });
     } catch (err) {
         console.error(err);
         res.status(500).send("Error processing donation.");
@@ -120,7 +170,7 @@ app.post("/donate", async (req, res) => {
 });
 
 // 2. Auth Routes
-app.get("/login", (req, res) => res.render("login", { error_message: null, isLoggedIn: req.session.isLoggedIn }));
+app.get("/login", (req, res) => res.render("login", { error_message: null }));
 
 app.post("/login", async (req, res) => {
     try {
@@ -130,13 +180,24 @@ app.post("/login", async (req, res) => {
             req.session.username = user.username;
             req.session.role = user.role;
             req.session.participantId = user.participant_id; 
+            
+            // --- NEW: FETCH PROFILE PICTURE ---
+            if (user.participant_id) {
+                const participant = await db("participants")
+                    .select("profilePictureUrl") // Note the CamelCase column
+                    .where({ participant_id: user.participant_id })
+                    .first();
+                req.session.profilePictureUrl = participant ? participant.profilePictureUrl : null;
+            }
+            // ----------------------------------
+
             req.session.save(() => res.redirect("/dashboard"));
         } else {
-            res.render("login", { error_message: "Invalid credentials", isLoggedIn: false });
+            res.render("login", { error_message: "Invalid credentials" });
         }
     } catch (err) {
         console.error(err);
-        res.render("login", { error_message: "System Error", isLoggedIn: false });
+        res.render("login", { error_message: "System Error" });
     }
 });
 
@@ -166,7 +227,7 @@ app.get("/dashboard", isLoggedIn, async (req, res) => {
         }
     } catch (e) { console.error(e); }
     
-    res.render("dashboard", { user: req.session.username, role: req.session.role, isLoggedIn: true, greeting, stats });
+    res.render("dashboard", { greeting, stats });
 });
 
 // 4. PARTICIPANTS
@@ -191,15 +252,50 @@ app.get("/participants", isLoggedIn, async (req, res) => {
     const participants = await query;
     res.render("participants", { 
         participants, 
-        role: req.session.role, 
         isManager: req.session.role === 'manager', 
-        user: req.session.username, 
-        isLoggedIn: true,
         query: searchQuery 
     });
 });
 
-app.get("/participants/add", isManager, (req, res) => res.render("participants_add", { user: req.session.username, isLoggedIn: true, returnTo: req.query.returnTo }));
+// --- UPLOAD IMAGE ROUTE (Updated) ---
+app.post("/participants/upload-image", isLoggedIn, upload.single('profile_pic'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.redirect("/participants"); 
+        }
+
+        // Determine who we are updating:
+        // 1. Default to the logged-in user
+        let targetId = req.session.participantId;
+        
+        // 2. IF a manager sent a specific ID in the form, use that instead
+        if (req.session.role === 'manager' && req.body.participant_id) {
+            targetId = req.body.participant_id;
+        }
+
+        const s3Url = req.file.location;
+
+        // Update Database
+        await db("participants")
+            .where({ participant_id: targetId })
+            .update({ profilePictureUrl: s3Url });
+
+        // Only update the SESSION profile pic if the user updated THEMSELVES
+        if (parseInt(targetId) === req.session.participantId) {
+            req.session.profilePictureUrl = s3Url;
+            req.session.save(() => res.redirect("/participants"));
+        } else {
+            // If manager updated someone else, just redirect back
+            res.redirect("/participants");
+        }
+
+    } catch (err) {
+        console.error("Upload Error", err);
+        res.status(500).send("Error uploading image");
+    }
+});
+
+app.get("/participants/add", isManager, (req, res) => res.render("participants_add", { returnTo: req.query.returnTo }));
 app.post("/participants/add", isManager, async (req, res) => {
     try {
         const [newP] = await db("participants").insert(req.body).returning('participant_id');
@@ -209,7 +305,7 @@ app.post("/participants/add", isManager, async (req, res) => {
 });
 app.get("/participants/edit/:id", isManager, async (req, res) => {
     const participant = await db("participants").where({ participant_id: req.params.id }).first();
-    res.render("participants_edit", { participant, user: req.session.username, isLoggedIn: true });
+    res.render("participants_edit", { participant });
 });
 app.post("/participants/edit/:id", isManager, async (req, res) => {
     await db("participants").where({ participant_id: req.params.id }).update({
@@ -249,17 +345,14 @@ app.get("/donations", isLoggedIn, async (req, res) => {
     const donations = await query;
     res.render("donations", { 
         donations, 
-        role: req.session.role, 
         isManager: req.session.role === 'manager', 
-        user: req.session.username, 
-        isLoggedIn: true,
         query: searchQuery 
     });
 });
 
 app.get("/donations/add", isManager, async (req, res) => {
     const participants = await db("participants").select("participant_id", "first_name", "last_name").orderBy("last_name");
-    res.render("donations_add", { participants, user: req.session.username, isLoggedIn: true, newParticipantId: req.query.newParticipantId });
+    res.render("donations_add", { participants, newParticipantId: req.query.newParticipantId });
 });
 app.post("/donations/add", isManager, async (req, res) => {
     await db("donations").insert({ participant_id: req.body.participant_id, donation_date: req.body.donation_date, donation_amount: req.body.donation_amount });
@@ -268,7 +361,7 @@ app.post("/donations/add", isManager, async (req, res) => {
 app.get("/donations/edit/:id", isManager, async (req, res) => {
     const donation = await db("donations").where({ donation_id: req.params.id }).first();
     const participants = await db("participants").select("participant_id", "first_name", "last_name").orderBy("last_name");
-    res.render("donations_edit", { donation, participants, user: req.session.username, isLoggedIn: true });
+    res.render("donations_edit", { donation, participants });
 });
 app.post("/donations/edit/:id", isManager, async (req, res) => {
     await db("donations").where({ donation_id: req.params.id }).update({ participant_id: req.body.participant_id, donation_date: req.body.donation_date, donation_amount: req.body.donation_amount });
@@ -311,10 +404,7 @@ app.get("/surveys", isLoggedIn, async (req, res) => {
     const surveys = await query;
     res.render("surveys", { 
         surveys, 
-        role: req.session.role, 
         isManager: req.session.role === 'manager', 
-        user: req.session.username, 
-        isLoggedIn: true,
         query: searchQuery 
     });
 });
@@ -323,7 +413,7 @@ app.get("/surveys/add", isManager, async (req, res) => {
     const participants = await db("participants").select("participant_id", "first_name", "last_name").orderBy("last_name");
     const events = await db("event_occurrences").join("event_templates", "event_occurrences.event_template_id", "event_templates.event_template_id").select("event_occurrences.event_occurrence_id", "event_templates.event_name", "event_occurrences.start_time").orderBy("event_occurrences.start_time", "desc");
     const npsBuckets = await db("nps_buckets").select("*");
-    res.render("surveys_add", { participants, events, npsBuckets, user: req.session.username, isLoggedIn: true });
+    res.render("surveys_add", { participants, events, npsBuckets });
 });
 app.post("/surveys/add", isManager, async (req, res) => {
     await db("surveys").insert({ ...req.body, submission_date: new Date() });
@@ -334,7 +424,7 @@ app.get("/surveys/edit/:id", isManager, async (req, res) => {
     const participants = await db("participants").select("participant_id", "first_name", "last_name").orderBy("last_name");
     const events = await db("event_occurrences").join("event_templates", "event_occurrences.event_template_id", "event_templates.event_template_id").select("event_occurrences.event_occurrence_id", "event_templates.event_name", "event_occurrences.start_time").orderBy("event_occurrences.start_time", "desc");
     const npsBuckets = await db("nps_buckets").select("*");
-    res.render("surveys_edit", { survey, participants, events, npsBuckets, user: req.session.username, isLoggedIn: true });
+    res.render("surveys_edit", { survey, participants, events, npsBuckets });
 });
 app.post("/surveys/edit/:id", isManager, async (req, res) => {
     await db("surveys").where({ survey_id: req.params.id }).update(req.body);
@@ -374,17 +464,14 @@ app.get("/events", isLoggedIn, async (req, res) => {
     const events = await query;
     res.render("events", { 
         events, 
-        role: req.session.role, 
         isManager: req.session.role === 'manager', 
-        user: req.session.username, 
-        isLoggedIn: true,
         query: searchQuery 
     });
 });
 app.get("/events/add", isManager, async (req, res) => {
     const templates = await db("event_templates").select("*");
     const locations = await db("locations").select("*");
-    res.render("events_add", { templates, locations, user: req.session.username, isLoggedIn: true });
+    res.render("events_add", { templates, locations });
 });
 app.post("/events/add", isManager, async (req, res) => {
     await db("event_occurrences").insert(req.body);
@@ -394,7 +481,7 @@ app.get("/events/edit/:id", isManager, async (req, res) => {
     const event = await db("event_occurrences").where({ event_occurrence_id: req.params.id }).first();
     const templates = await db("event_templates").select("*");
     const locations = await db("locations").select("*");
-    res.render("events_edit", { event, templates, locations, user: req.session.username, isLoggedIn: true });
+    res.render("events_edit", { event, templates, locations });
 });
 app.post("/events/edit/:id", isManager, async (req, res) => {
     await db("event_occurrences").where({ event_occurrence_id: req.params.id }).update(req.body);
@@ -435,17 +522,14 @@ app.get("/milestones", isLoggedIn, async (req, res) => {
     const milestones = await query;
     res.render("milestones", { 
         milestones, 
-        role: req.session.role, 
         isManager: req.session.role === 'manager', 
-        user: req.session.username, 
-        isLoggedIn: true,
         query: searchQuery 
     });
 });
 app.get("/milestones/add", isManager, async (req, res) => {
     const participants = await db("participants").select("participant_id", "first_name", "last_name").orderBy("last_name");
     const types = await db("milestone_types").select("*");
-    res.render("milestones_add", { participants, types, user: req.session.username, isLoggedIn: true });
+    res.render("milestones_add", { participants, types });
 });
 app.post("/milestones/add", isManager, async (req, res) => {
     await db("milestones").insert(req.body);
@@ -455,7 +539,7 @@ app.get("/milestones/edit/:id", isManager, async (req, res) => {
     const milestone = await db("milestones").where({ milestone_id: req.params.id }).first();
     const participants = await db("participants").select("participant_id", "first_name", "last_name").orderBy("last_name");
     const types = await db("milestone_types").select("*");
-    res.render("milestones_edit", { milestone, participants, types, user: req.session.username, isLoggedIn: true });
+    res.render("milestones_edit", { milestone, participants, types });
 });
 app.post("/milestones/edit/:id", isManager, async (req, res) => {
     await db("milestones").where({ milestone_id: req.params.id }).update(req.body);
@@ -488,8 +572,6 @@ app.get("/users", isManager, async (req, res) => {
         const users = await query;
         res.render("users", { 
             users, 
-            user: req.session.username, 
-            isLoggedIn: req.session.isLoggedIn, 
             role: req.session.role,
             query: searchQuery 
         });
@@ -500,7 +582,7 @@ app.get("/users", isManager, async (req, res) => {
 });
 app.get("/users/add", isManager, async (req, res) => {
     const participants = await db("participants").select("participant_id", "first_name", "last_name").orderBy("last_name");
-    res.render("users_add", { participants, user: req.session.username, isLoggedIn: true });
+    res.render("users_add", { participants });
 });
 app.post("/users/add", isManager, async (req, res) => {
     await db("users").insert({ username: req.body.username, password: req.body.password, role: req.body.role, participant_id: req.body.participant_id || null });
@@ -509,19 +591,19 @@ app.post("/users/add", isManager, async (req, res) => {
 app.get("/users/edit/:id", isManager, async (req, res) => {
     const userToEdit = await db("users").where({ user_id: req.params.id }).first();
     const participants = await db("participants").select("participant_id", "first_name", "last_name").orderBy("last_name");
-    res.render("users_edit", { userToEdit, participants, user: req.session.username, isLoggedIn: true });
+    res.render("users_edit", { userToEdit, participants });
 });
 app.post("/users/edit/:id", isManager, async (req, res) => {
     await db("users").where({ user_id: req.params.id }).update({ username: req.body.username, password: req.body.password, role: req.body.role, participant_id: req.body.participant_id || null });
     res.redirect("/users");
 });
 app.post("/users/delete/:id", isManager, async (req, res) => {
-    if (parseInt(req.params.id) === req.session.user_id) return res.status(400).send("Cannot delete self."); // Basic safeguard
+    if (parseInt(req.params.id) === req.session.user_id) return res.status(400).send("Cannot delete self."); 
     await db("users").where({ user_id: req.params.id }).del();
     res.redirect("/users");
 });
 
 // Teapot
-app.get("/teapot", isLoggedIn, (req, res) => res.status(418).render("teapot", { user: req.session.username, isLoggedIn: true, role: req.session.role }));
+app.get("/teapot", isLoggedIn, (req, res) => res.status(418).render("teapot"));
 
 app.listen(PORT, () => console.log(`Ella Rises running on port ${PORT}`));
