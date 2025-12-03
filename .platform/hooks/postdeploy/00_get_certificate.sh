@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
+# .platform/hooks/postdeploy/00_get_certificate.sh
 
-# 1. Run Certbot with a 'dummy' subdomain to bypass the 5-per-week Rate Limit
-# Adding -d www.ellarises-site.is404.net makes Let's Encrypt think this is a brand new request.
-# We use the absolute path /opt/certbot/bin/certbot to be 100% sure we find the executable.
+# 1. Run Certbot for the SINGLE domain only.
+# We removed 'www' to prevent the "Expand Certificate" conflict that was crashing the script.
+# --reinstall tells Certbot: "Even if the cert exists, rewrite the Nginx config to ensure HTTPS is on."
+sudo /opt/certbot/bin/certbot -n -d ellarises-site.is404.net --nginx --agree-tos --email spencerjorgensen3.0@gmail.com --reinstall --redirect
 
-sudo /opt/certbot/bin/certbot -n -d ellarises-site.is404.net -d www.ellarises-site.is404.net --nginx --agree-tos --email spencerjorgensen3.0@gmail.com --reinstall --redirect
-
-# 2. Force Nginx to RESTART (Not just reload)
-# Reloading often fails to bind to the new Port 443. Restarting kills the old process and starts fresh.
+# 2. Restart Nginx to load the new configuration
 sudo systemctl restart nginx
