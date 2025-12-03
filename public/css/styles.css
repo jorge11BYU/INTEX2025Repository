@@ -1,4 +1,8 @@
 /* Ella Rises Theme */
+
+/* --- 1. FONTS SETUP --- */
+/* (TT Milk Script removed) */
+
 :root {
     /* Ella Rises Brand Colors */
     --primary-color: #3A3F3B; /* Dark Grey */
@@ -8,13 +12,31 @@
     /* Text Colors */
     --text-dark: #333333;
     --text-light: #ffffff;
+
+    /* --- FONT VARIABLES --- */
+    --font-heading: 'DM Serif Display', serif; /* Google Font */
+    --font-body: 'Montserrat', sans-serif;     /* Google Font */
+    
+    /* Fallback: Mapped to Heading font since Script is removed */
+    --font-accent: 'DM Serif Display', serif;  
 }
 
 /* --- 2. GLOBAL STYLES --- */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-body); /* Applied Montserrat globally */
     background-color: var(--secondary-color);
     color: var(--text-dark);
+}
+
+/* Headings automatically use DM Serif Display */
+h1, h2, h3, h4, h5, .display-1, .display-2, .display-3, .display-4 {
+    font-family: var(--font-heading);
+    font-weight: 400; 
+}
+
+/* Utility Class */
+.text-accent {
+    font-family: var(--font-accent);
 }
 
 /* --- 3. CUSTOM NAVBAR --- */
@@ -34,7 +56,7 @@ body {
 /* --- 4. LANDING PAGE HERO SECTION --- */
 .hero-section {
     /* Using your Pink accent with opacity for the overlay */
-    background: linear-gradient(rgba(249, 175, 177, .7), rgba(249, 175, 177, .7)), url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1351&q=80');
+    background: linear-gradient(rgba(249, 175, 177, .8), rgba(249, 175, 177, .8)), url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1351&q=80');
     background-size: cover;
     background-position: center;
     color: var(--text-dark); /* Changed to dark text for better contrast on pink */
@@ -61,7 +83,6 @@ body {
 /* --- 6. BOOTSTRAP OVERRIDES --- */
 
 /* Red Buttons (btn-danger) -> Now mapped to your PRIMARY (Dark Grey) */
-/* Used for "Supporter Login" */
 .btn-danger {
     background-color: var(--primary-color) !important;
     border-color: var(--primary-color) !important;
@@ -69,7 +90,7 @@ body {
 }
 .btn-danger:hover {
     background-color: var(--primary-color) !important;
-    filter: brightness(1.2); /* Lighten slightly on hover */
+    filter: brightness(1.2); 
 }
 
 /* Primary Buttons (btn-primary) -> Dark Grey */
@@ -91,7 +112,7 @@ body {
 }
 .btn-success:hover {
     background-color: var(--accent-color) !important;
-    filter: brightness(0.95); /* Darken slightly on hover */
+    filter: brightness(0.95); 
 }
 
 /* Outline Buttons */
