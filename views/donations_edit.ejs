@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Donation - Ella Rises</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="bg-light">
+
+    <%- include('partials/navbar') %>
+
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-header bg-white">
+                        <h4 class="mb-0">Edit Donation</h4>
+                    </div>
+                    <div class="card-body">
+                        <form action="/donations/edit/<%= donation.donation_id %>" method="POST">
+                            
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <label class="form-label">Donor (Participant)</label>
+                                    <a href="/participants/add" class="text-decoration-none small" target="_blank">+ Add New Person</a>
+                                </div>
+                                <select name="participant_id" class="form-select" required>
+                                    <% participants.forEach(p => { %>
+                                        <option value="<%= p.participant_id %>" 
+                                            <%= p.participant_id === donation.participant_id ? 'selected' : '' %>>
+                                            <%= p.last_name %>, <%= p.first_name %>
+                                        </option>
+                                    <% }) %>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Amount ($)</label>
+                                <input type="number" step="0.01" name="donation_amount" class="form-control" value="<%= donation.donation_amount %>" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Date</label>
+                                <!-- Format the date properly for the input field -->
+                                <input type="date" name="donation_date" class="form-control" value="<%= new Date(donation.donation_date).toISOString().split('T')[0] %>" required>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">Update Donation</button>
+                                <a href="/donations" class="btn btn-outline-secondary">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

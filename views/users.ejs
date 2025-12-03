@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Users - Ella Rises</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="bg-light">
+
+    <%- include('partials/navbar') %>
+
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>Website Users</h2>
+            <a href="/users/add" class="btn btn-success">Create New User</a>
+        </div>
+
+        <!-- SEARCH BAR (Updated Placeholder) -->
+        <form action="/users" method="GET" class="mb-4">
+            <div class="input-group shadow-sm">
+                <input type="text" name="q" class="form-control border-0" placeholder="Search by username, role, or participant name..." value="<%= typeof query !== 'undefined' ? query : '' %>">
+                <button type="submit" class="btn btn-primary px-4">Search</button>
+                <% if (typeof query !== 'undefined' && query) { %>
+                    <a href="/users" class="btn btn-secondary px-3">Clear</a>
+                <% } %>
+            </div>
+        </form>
+
+        <div class="table-responsive bg-white shadow-sm p-3 rounded">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Linked Participant</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (users.length === 0) { %>
+                        <tr><td colspan="5" class="text-center text-muted py-4">No records found.</td></tr>
+                    <% } %>
+                    <% users.forEach(u => { %>
+                        <tr>
+                            <td><%= u.user_id %></td>
+                            <td class="fw-bold"><%= u.username %></td>
+                            <td>
+                                <% if (u.role === 'manager') { %>
+                                    <span class="badge bg-danger">Manager</span>
+                                <% } else { %>
+                                    <span class="badge bg-secondary">User</span>
+                                <% } %>
+                            </td>
+                            <td>
+                                <% if (u.first_name) { %>
+                                    <%= u.first_name %> <%= u.last_name %>
+                                <% } else { %>
+                                    <span class="text-muted fst-italic">Not Linked</span>
+                                <% } %>
+                            </td>
+                            <td>
+                                <a href="/users/edit/<%= u.user_id %>" class="btn btn-sm btn-outline-primary">Edit</a>
+                                <form action="/users/delete/<%= u.user_id %>" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure? This deletes the LOGIN, not the participant data.');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Donations</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="bg-light">
+    <%- include('partials/navbar') %>
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>Donation History</h2>
+            <% if (isManager) { %>
+                <a href="/donations/add" class="btn btn-success">Record New Donation</a>
+            <% } else { %>
+                <a href="/donate" class="btn btn-success">Make a Donation</a>
+            <% } %>
+        </div>
+
+        <!-- SEARCH BAR -->
+        <form action="/donations" method="GET" class="mb-4">
+            <div class="input-group shadow-sm">
+                <!-- Dynamic Placeholder based on role -->
+                <input type="text" name="q" class="form-control border-0" 
+                       placeholder="<%= isManager ? 'Search by donor name or amount...' : 'Search by amount...' %>" 
+                       value="<%= typeof query !== 'undefined' ? query : '' %>">
+                <button type="submit" class="btn btn-primary px-4">Search</button>
+                <% if (typeof query !== 'undefined' && query) { %>
+                    <a href="/donations" class="btn btn-secondary px-3">Clear</a>
+                <% } %>
+            </div>
+        </form>
+
+        <div class="table-responsive bg-white shadow-sm p-3 rounded">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Donor Name</th>
+                        <th>Amount</th>
+                        <% if (isManager) { %><th>Actions</th><% } %>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (donations.length === 0) { %>
+                        <tr><td colspan="4" class="text-center text-muted py-4">No records found.</td></tr>
+                    <% } %>
+                    <% donations.forEach(d => { %>
+                        <tr>
+                            <td><%= new Date(d.donation_date).toLocaleDateString() %></td>
+                            <td><%= d.first_name %> <%= d.last_name %></td>
+                            <td class="fw-bold text-success">$<%= d.donation_amount %></td>
+                            <% if (isManager) { %>
+                                <td>
+                                    <a href="/donations/edit/<%= d.donation_id %>" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    <form action="/donations/delete/<%= d.donation_id %>" method="POST" style="display:inline;" onsubmit="return confirm('Delete?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                </td>
+                            <% } %>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
