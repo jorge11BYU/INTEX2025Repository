@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Feedback - Ella Rises</title>
+    
+    <!-- Fonts matching your events page -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+
+    <style>
+        /* Custom tweaks for the rating scales */
+        .rating-label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .scale-labels {
+            font-size: 0.75rem;
+            color: #6c757d;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        /* Style for checked Disabled inputs to keep them visible */
+        .form-check-input:checked {
+            background-color: #198754; 
+            border-color: #198754;
+            opacity: 1; /* Force opacity so it doesn't look faded */
+        }
+        /* Make non-checked inputs slightly less visible to highlight the user's choice */
+        .form-check-input:disabled:not(:checked) {
+            opacity: 0.4;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <%- include('partials/navbar') %>
+
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-9 col-xl-8">
+                
+                <div class="card shadow-sm border-0 rounded-3">
+                    <div class="card-body p-4 p-md-5">
+                        
+                        <div class="text-center mb-4">
+                            <h2 style="font-family: 'DM Serif Display', serif;">Your Feedback</h2>
+                            <p class="text-muted">You submitted this on <%= new Date(survey.submission_date).toLocaleDateString() %></p>
+                        </div>
+
+                        <!-- 1. Satisfaction -->
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-6 border-end-md">
+                                <div class="p-2">
+                                    <label class="rating-label">How satisfied were you?</label>
+                                    <div class="scale-labels px-1">
+                                        <span>Not Satisfied</span>
+                                        <span>Very Satisfied</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between px-2">
+                                        <% for(let i=1; i<=5; i++) { %>
+                                            <div class="form-check text-center">
+                                                <input class="form-check-input" type="radio" disabled
+                                                       <%= survey.score_satisfaction == i ? 'checked' : '' %>>
+                                                <label class="form-check-label"><%=i%></label>
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 2. Usefulness -->
+                            <div class="col-md-6">
+                                <div class="p-2">
+                                    <label class="rating-label">Was the content useful?</label>
+                                    <div class="scale-labels px-1">
+                                        <span>Not Useful</span>
+                                        <span>Very Useful</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between px-2">
+                                        <% for(let i=1; i<=5; i++) { %>
+                                            <div class="form-check text-center">
+                                                <input class="form-check-input" type="radio" disabled
+                                                       <%= survey.score_usefulness == i ? 'checked' : '' %>>
+                                                <label class="form-check-label"><%=i%></label>
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="w-100 d-none d-md-block border-bottom my-2"></div>
+
+                            <!-- 3. Instructor -->
+                            <div class="col-md-6 border-end-md">
+                                <div class="p-2">
+                                    <label class="rating-label">Instructor/Speaker Quality:</label>
+                                    <div class="scale-labels px-1">
+                                        <span>Poor</span>
+                                        <span>Excellent</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between px-2">
+                                        <% for(let i=1; i<=5; i++) { %>
+                                            <div class="form-check text-center">
+                                                <input class="form-check-input" type="radio" disabled
+                                                       <%= survey.score_instructor == i ? 'checked' : '' %>>
+                                                <label class="form-check-label"><%=i%></label>
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 4. Recommend (NPS) -->
+                            <div class="col-md-6">
+                                <div class="p-2">
+                                    <label class="rating-label">Likelihood to recommend?</label>
+                                    <div class="scale-labels px-1">
+                                        <span>Unlikely</span>
+                                        <span>Very Likely</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between px-2">
+                                        <% for(let i=1; i<=5; i++) { %>
+                                            <div class="form-check text-center">
+                                                <input class="form-check-input" type="radio" disabled
+                                                       <%= survey.score_recommendation == i ? 'checked' : '' %>>
+                                                <label class="form-check-label"><%=i%></label>
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="w-100 d-none d-md-block border-bottom my-2"></div>
+
+                            <!-- 5. Overall -->
+                            <div class="col-md-6 border-end-md">
+                                <div class="p-2">
+                                    <label class="rating-label">Overall Experience:</label>
+                                    <div class="scale-labels px-1">
+                                        <span>Poor</span>
+                                        <span>Great</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between px-2">
+                                        <% for(let i=1; i<=5; i++) { %>
+                                            <div class="form-check text-center">
+                                                <input class="form-check-input" type="radio" disabled
+                                                       <%= survey.score_overall == i ? 'checked' : '' %>>
+                                                <label class="form-check-label"><%=i%></label>
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 6. NPS Bucket -->
+                            <div class="col-md-6">
+                                <div class="p-2">
+                                    <label class="rating-label">NPS Category</label>
+                                    <div class="mb-1 d-none d-md-block" style="height: 19px;"></div> 
+                                    <select class="form-select" disabled>
+                                        <option value="1" <%= survey.nps_bucket_id == 1 ? 'selected' : '' %>>Detractor</option>
+                                        <option value="2" <%= survey.nps_bucket_id == 2 ? 'selected' : '' %>>Passive</option>
+                                        <option value="3" <%= survey.nps_bucket_id == 3 ? 'selected' : '' %>>Promoter</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 7. Comments -->
+                        <div class="mb-4 bg-light p-3 rounded">
+                            <label class="form-label fw-bold">Additional Comments</label>
+                            <textarea class="form-control" rows="3" disabled><%= survey.comments || 'No comments provided.' %></textarea>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <!-- DYNAMIC BACK BUTTON -->
+                            <a href="/<%= source %>" class="btn btn-outline-primary px-4">
+                                <%= source === 'surveys' ? 'Back to Surveys' : 'Back to Events' %>
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

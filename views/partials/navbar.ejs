@@ -22,14 +22,18 @@
                 Menu
               </a>
               <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="navbarDropdown" style="border-top: 4px solid var(--primary-color) !important;">
+                
                 <li><h6 class="dropdown-header text-uppercase small" style="color: var(--primary-color); font-weight: bold;">Engagement</h6></li>
                 <li><a class="dropdown-item" href="/participants"><%= (typeof role !== 'undefined' && role === 'manager') ? 'Participants' : 'Personal Info' %></a></li>
                 <li><a class="dropdown-item" href="/events">Events</a></li>
                 <li><a class="dropdown-item" href="/surveys">Surveys</a></li>
                 <li><a class="dropdown-item" href="/milestones">Milestones</a></li>
+                
                 <li><hr class="dropdown-divider"></li>
+                
                 <li><h6 class="dropdown-header text-uppercase small" style="color: var(--primary-color); font-weight: bold;">Support</h6></li>
                 <li><a class="dropdown-item" href="/donations">Donate</a></li>
+                
                 <% if (typeof role !== 'undefined' && role === 'manager') { %>
                    <li><hr class="dropdown-divider"></li>
                    <li><h6 class="dropdown-header text-uppercase small" style="color: var(--primary-color); font-weight: bold;">Admin Controls</h6></li>
@@ -41,9 +45,9 @@
             <li class="nav-item ms-3 me-2">
                 <a href="/participants" title="Update Profile Photo">
                     <% if (typeof userProfilePic !== 'undefined' && userProfilePic) { %>
-                        <img src="<%= userProfilePic %>" alt="User" class="rounded-circle border border-white shadow-sm" style="width: 40px; height: 40px; object-fit: cover;">
+                        <img src="<%= userProfilePic %>" alt="User" class="rounded-circle shadow-sm" style="width: 40px; height: 40px; object-fit: cover;">
                     <% } else { %>
-                        <div class="rounded-circle bg-light text-secondary d-flex justify-content-center align-items-center shadow-sm border border-white" style="width: 40px; height: 40px; font-weight: bold;">
+                        <div class="rounded-circle bg-light text-secondary d-flex justify-content-center align-items-center shadow-sm" style="width: 40px; height: 40px; font-weight: bold;">
                             <%= (typeof user !== 'undefined' && user) ? user.charAt(0).toUpperCase() : 'U' %>
                         </div>
                     <% } %>

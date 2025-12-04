@@ -22,10 +22,10 @@
         <!-- SEARCH BAR -->
         <form action="/donations" method="GET" class="mb-4">
             <div class="input-group shadow-sm">
-                <!-- Dynamic Placeholder based on role -->
                 <input type="text" name="q" class="form-control border-0" 
-                       placeholder="<%= isManager ? 'Search by donor name or amount...' : 'Search by amount...' %>" 
-                       value="<%= typeof query !== 'undefined' ? query : '' %>">
+                    placeholder="<%= isManager ? 'Search by donor, amount, or date...' : 'Search by amount or date...' %>" 
+                    value="<%= typeof query !== 'undefined' ? query : '' %>">
+                
                 <button type="submit" class="btn btn-primary px-4">Search</button>
                 <% if (typeof query !== 'undefined' && query) { %>
                     <a href="/donations" class="btn btn-secondary px-3">Clear</a>
@@ -55,8 +55,8 @@
                             <% if (isManager) { %>
                                 <td>
                                     <a href="/donations/edit/<%= d.donation_id %>" class="btn btn-sm btn-outline-primary">Edit</a>
-                                    <form action="/donations/delete/<%= d.donation_id %>" method="POST" style="display:inline;" onsubmit="return confirm('Delete?');">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                    <form action="/donations/delete/<%= d.donation_id %>" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to refund this donation? This will permanently remove the record.');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Refund</button>
                                     </form>
                                 </td>
                             <% } %>
