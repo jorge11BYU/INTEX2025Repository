@@ -11,7 +11,9 @@
     <%- include('partials/navbar') %>
     <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2>Participant Milestones</h2>
+            <!-- DYNAMIC HEADER -->
+            <h2><%= isManager ? 'Participant Milestones' : 'My Milestones' %></h2>
+            
             <% if (isManager) { %>
                 <a href="/milestones/add" class="btn btn-success">Record Milestone</a>
             <% } %>
@@ -36,20 +38,31 @@
                 <thead class="table-light">
                     <tr>
                         <th>Date</th>
-                        <th>Participant</th>
+                        
+                        <!-- Hide Participant column for regular users (since it's their own list) -->
+                        <% if (isManager) { %>
+                            <th>Participant</th>
+                        <% } %>
+                        
                         <th>Milestone</th>
                         <% if (isManager) { %><th>Actions</th><% } %>
                     </tr>
                 </thead>
                 <tbody>
                     <% if (milestones.length === 0) { %>
-                        <tr><td colspan="4" class="text-center text-muted py-4">No records found.</td></tr>
+                        <!-- Dynamic colspan to match visible columns -->
+                        <tr><td colspan="<%= isManager ? 4 : 2 %>" class="text-center text-muted py-4">No records found.</td></tr>
                     <% } %>
                     <% milestones.forEach(m => { %>
                         <tr>
                             <td><%= new Date(m.milestone_date).toLocaleDateString() %></td>
-                            <td><%= m.first_name %> <%= m.last_name %></td>
+                            
+                            <% if (isManager) { %>
+                                <td><%= m.first_name %> <%= m.last_name %></td>
+                            <% } %>
+                            
                             <td><span class="badge bg-info text-dark"><%= m.milestone_title %></span></td>
+                            
                             <% if (isManager) { %>
                                 <td>
                                     <a href="/milestones/edit/<%= m.milestone_id %>" class="btn btn-sm btn-outline-primary">Edit</a>

@@ -2,6 +2,7 @@ import express from "express";
 import knex from "knex";
 import path from "path";
 import { fileURLToPath } from "url";
+// 1. Load Environment Variables immediately
 import 'dotenv/config'; 
 import session from "express-session";
 
@@ -43,29 +44,19 @@ app.use(session({
     cookie: { secure: false }
 }));
 
-// --- DEBUGGING START ---
-console.log("------------------------------------------------");
-console.log("DEBUG: Checking Environment Variables");
-console.log("Region:", process.env.AWS_REGION);
-console.log("Bucket:", process.env.S3_BUCKET_NAME);
-console.log("Access Key ID:", process.env.AWS_ACCESS_KEY_ID ? "✔ LOADED (" + process.env.AWS_ACCESS_KEY_ID.substring(0, 5) + "...)" : "❌ MISSING (Undefined)");
-console.log("Secret Access Key:", process.env.AWS_SECRET_ACCESS_KEY ? "✔ LOADED" : "❌ MISSING (Undefined)");
-console.log("------------------------------------------------");
-// --- DEBUGGING END ---
-
 // --- AWS S3 & MULTER CONFIGURATION ---
 const s3 = new S3Client({
-    region: process.env.AWS_REGION, // Ensure this is set in .env
+    region: process.env.AWS_REGION ? process.env.AWS_REGION.trim() : "us-east-2",
     credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,     // Ensure this is set in .env
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY // Ensure this is set in .env
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID ? process.env.AWS_ACCESS_KEY_ID.trim() : "",
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ? process.env.AWS_SECRET_ACCESS_KEY.trim() : ""
     }
 });
 
 const upload = multer({
     storage: multerS3({
         s3: s3,
-        bucket: process.env.S3_BUCKET_NAME, // Ensure this is set in .env
+        bucket: process.env.S3_BUCKET_NAME ? process.env.S3_BUCKET_NAME.trim() : "ella-rises-uploads",
         acl: 'public-read', // Makes the uploaded file readable by browsers
         contentType: multerS3.AUTO_CONTENT_TYPE, // Automatically detects jpeg/png
         key: function (req, file, cb) {
@@ -143,11 +134,26 @@ app.post("/signup", async (req, res) => {
     }
 });
 
-app.get("/donate", (req, res) => {
-    if (req.session.isLoggedIn) {
-        return res.redirect("/donations");
+// UPDATED: Allow logged-in users to see the donation page too
+app.get("/donate", async (req, res) => {
+    let participant = null;
+
+    // If the user IS logged in, fetch their info to autofill the form
+    if (req.session.isLoggedIn && req.session.participantId) {
+        try {
+            participant = await db("participants")
+                .where({ participant_id: req.session.participantId })
+                .first();
+        } catch (err) {
+            console.error("Error fetching participant for donation:", err);
+        }
     }
-    res.render("donate_public", { success_message: null });
+
+    // Render the page for everyone (Public OR Logged In)
+    res.render("donate_public", { 
+        success_message: null,
+        participant: participant // This lets the EJS file autofill First/Last/Email
+    });
 });
 
 app.post("/donate", async (req, res) => {
@@ -295,6 +301,34 @@ app.post("/participants/upload-image", isLoggedIn, upload.single('profile_pic'),
     }
 });
 
+// --- DELETE IMAGE ROUTE ---
+app.post("/participants/delete-image", isLoggedIn, async (req, res) => {
+    try {
+        // Determine who we are updating (Same logic as upload)
+        let targetId = req.session.participantId;
+        if (req.session.role === 'manager' && req.body.participant_id) {
+            targetId = req.body.participant_id;
+        }
+
+        // 1. Update Database (Set URL to null)
+        await db("participants")
+            .where({ participant_id: targetId })
+            .update({ profilePictureUrl: null });
+
+        // 2. Update Session if the user deleted their own photo
+        if (parseInt(targetId) === req.session.participantId) {
+            req.session.profilePictureUrl = null;
+            req.session.save(() => res.redirect("/participants"));
+        } else {
+            res.redirect("/participants");
+        }
+
+    } catch (err) {
+        console.error("Delete Error", err);
+        res.status(500).send("Error deleting image");
+    }
+});
+
 app.get("/participants/add", isManager, (req, res) => res.render("participants_add", { returnTo: req.query.returnTo }));
 app.post("/participants/add", isManager, async (req, res) => {
     try {
@@ -333,12 +367,20 @@ app.get("/donations", isLoggedIn, async (req, res) => {
 
     if (searchQuery) {
         query = query.andWhere(builder => {
+            // 1. Search by Name
             builder.where('participants.first_name', 'ilike', `%${searchQuery}%`)
                    .orWhere('participants.last_name', 'ilike', `%${searchQuery}%`)
                    .orWhereRaw("CONCAT(participants.first_name, ' ', participants.last_name) ILIKE ?", [`%${searchQuery}%`]);
+            
+            // 2. Search by Amount
             if (!isNaN(searchQuery)) {
                 builder.orWhere('donation_amount', '=', searchQuery);
             }
+
+            // 3. Search by Date (ADDED THIS)
+            builder.orWhereRaw("TO_CHAR(donations.donation_date, 'MM/DD/YYYY') ILIKE ?", [`%${searchQuery}%`])
+                   .orWhereRaw("TO_CHAR(donations.donation_date, 'YYYY-MM-DD') ILIKE ?", [`%${searchQuery}%`])
+                   .orWhereRaw("TO_CHAR(donations.donation_date, 'Month') ILIKE ?", [`%${searchQuery}%`]);
         });
     }
 
@@ -372,7 +414,89 @@ app.post("/donations/delete/:id", isManager, async (req, res) => {
     res.redirect("/donations");
 });
 
-// 6. SURVEYS
+// 6. SURVEYS (Manager & User)
+
+// --- NEW USER ROUTES FOR SURVEYS ---
+app.get("/survey/:eventId", isLoggedIn, (req, res) => {
+    // Render the survey form for a specific event
+    res.render("survey", { eventId: req.params.eventId });
+});
+
+// --- NEW: VIEW PAST SURVEY (Read Only) ---
+app.get("/survey/view/:surveyId", isLoggedIn, async (req, res) => {
+    try {
+        const survey = await db("surveys")
+            .where({ survey_id: req.params.surveyId })
+            .first();
+
+        if (!survey) {
+            return res.redirect("/events");
+        }
+
+        // Security: Only allow Managers OR the specific Participant to view this.
+        if (req.session.role !== 'manager' && survey.participant_id !== req.session.participantId) {
+            return res.status(403).send("You are not authorized to view this survey.");
+        }
+
+        // CAPTURE THE SOURCE (Default to 'events' if missing)
+        const source = req.query.source || 'events';
+
+        res.render("survey_view", { survey, source });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error viewing survey");
+    }
+});
+
+app.post("/submit-survey", isLoggedIn, async (req, res) => {
+    const userId = req.session.participantId;
+    const { 
+        event_id, 
+        satisfaction, 
+        usefulness, 
+        instructor, 
+        recommend, 
+        overall, 
+        nps_bucket, 
+        comments 
+    } = req.body;
+
+    try {
+        // Prevent double submission (Extra safety)
+        const existing = await db("surveys")
+            .where({ 
+                participant_id: userId, 
+                event_occurrence_id: event_id 
+            })
+            .first();
+
+        if (existing) {
+            return res.redirect("/events");
+        }
+
+        // Updated to use SERIAL handling (remove manual nextId logic if you updated DB)
+        // Reverting to safe insert assuming SERIAL or manual fix you preferred
+        await db("surveys").insert({
+            participant_id: userId,
+            event_occurrence_id: event_id,
+            score_satisfaction: satisfaction,
+            score_usefulness: usefulness,
+            score_instructor: instructor,
+            score_recommendation: recommend,
+            score_overall: overall,
+            nps_bucket_id: nps_bucket,
+            comments: comments,
+            submission_date: new Date()
+        });
+
+        res.redirect("/events");
+    } catch (err) {
+        console.error("Error submitting survey", err);
+        res.status(500).send("Error submitting survey: " + err.message);
+    }
+});
+// -----------------------------------
+
 app.get("/surveys", isLoggedIn, async (req, res) => {
     let query = db("surveys")
         .join("participants", "surveys.participant_id", "participants.participant_id")
@@ -444,9 +568,20 @@ app.get("/events", isLoggedIn, async (req, res) => {
         .orderBy("event_occurrences.start_time", "desc");
     const searchQuery = req.query.q;
 
+    // --- LOGIC CHANGE: Check for Survey Submission for standard users ---
     if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
+        const participantId = req.session.participantId;
+        
+        // 1. Filter only to events they registered for
+        // 2. LEFT JOIN to surveys to check if they submitted one for this specific event
         query = query.join("registrations", "event_occurrences.event_occurrence_id", "registrations.event_occurrence_id")
-                     .where("registrations.participant_id", req.session.participantId);
+                     .where("registrations.participant_id", participantId)
+                     .leftJoin("surveys", function() {
+                         this.on("event_occurrences.event_occurrence_id", "=", "surveys.event_occurrence_id")
+                             .andOn("surveys.participant_id", "=", db.raw("?", [participantId]));
+                     })
+                     // We select survey_id. If it is NULL, they haven't taken it. If it exists, they have.
+                     .select("surveys.survey_id");
     }
 
     if (searchQuery) {
