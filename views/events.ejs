@@ -1,24 +1,45 @@
+<!-- 
+  Events Page
+  This page serves two purposes:
+  1. For Managers: It's a directory to manage all event occurrences (Edit/Delete/Create).
+  2. For Users: It's a "My Events" page showing events they have attended.
+     It also intelligently shows a "Take Survey" button if they haven't given feedback yet.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <%- include('partials/head') %>
     <title>Events - Ella Rises</title>
+    <style>
+        /* Custom Pagination Colors */
+        .page-link {
+            color: var(--primary-color, #198754);
+        }
+        .page-link:hover {
+            color: var(--accent-color, #146c43);
+            background-color: #f8f9fa;
+        }
+        .page-item.active .page-link {
+            background-color: var(--primary-color, #198754);
+            border-color: var(--primary-color, #198754);
+            color: white;
+        }
+    </style>
 </head>
 <body class="bg-light">
     <%- include('partials/navbar') %>
     <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <!-- Dynamic Header: Directory for Managers, My Events for Users -->
+            <!-- Header Text changes based on role -->
             <h2><%= isManager ? 'Event Directory' : 'My Events' %></h2>
             <% if (isManager) { %>
                 <a href="/events/add" class="btn btn-success">Create Event</a>
             <% } %>
         </div>
 
-        <!-- SEARCH BAR -->
+        <!-- Search Bar -->
         <form action="/events" method="GET" class="mb-4">
             <div class="input-group shadow-sm">
-                <!-- Dynamic Placeholder -->
                 <input type="text" name="q" class="form-control border-0" 
                        placeholder="<%= isManager ? 'Search by event name, location, or date...' : 'Search events by event name, location, or date...' %>" 
                        value="<%= typeof query !== 'undefined' ? query : '' %>">
@@ -37,7 +58,6 @@
                         <th>Event Name</th>
                         <th>Location</th>
                         <th>Capacity</th>
-                        <!-- Update Header based on Role -->
                         <th><%= isManager ? 'Actions' : 'Feedback' %></th>
                     </tr>
                 </thead>
@@ -47,7 +67,6 @@
                     <% } %>
                     <% events.forEach(e => { %>
                         <tr>
-                            <!-- Displaying Date and Time -->
                             <td><%= new Date(e.start_time).toLocaleDateString() %> <%= new Date(e.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %></td>
                             <td><%= e.event_name %><br><small class="text-muted"><%= e.event_description %></small></td>
                             <td><%= e.location_name %></td>
@@ -62,14 +81,15 @@
                                     </form>
                                 </td>
                             <% } else { %>
-                                <!-- User Actions (Survey) -->
+                                <!-- User Actions: Survey Logic -->
                                 <td>
                                     <% if (e.survey_id) { %>
-                                        <!-- LINK TO VIEW SURVEY with SOURCE=EVENTS -->
+                                        <!-- If they already took the survey, show 'View Feedback' -->
                                         <a href="/survey/view/<%= e.survey_id %>?source=events" class="btn btn-sm btn-outline-secondary">
                                             View Feedback
                                         </a>
                                     <% } else { %>
+                                        <!-- If not, prompt them to take it -->
                                         <a href="/survey/<%= e.event_occurrence_id %>" class="btn btn-sm btn-outline-success">
                                             Take Survey
                                         </a>
@@ -82,21 +102,18 @@
             </table>
         </div>
 
-        <!-- PAGINATION CONTROLS -->
+        <!-- Pagination Controls -->
         <% if (totalPages > 1) { %>
         <nav aria-label="Page navigation" class="mt-4">
             <ul class="pagination justify-content-center">
-                <!-- PREVIOUS BUTTON -->
                 <li class="page-item <%= currentPage == 1 ? 'disabled' : '' %>">
                     <a class="page-link" href="/events?page=<%= currentPage - 1 %><%= query ? '&q=' + query : '' %>" tabindex="-1">Previous</a>
                 </li>
                 
-                <!-- PAGE INDICATOR -->
                 <li class="page-item disabled">
                     <span class="page-link text-muted">Page <%= currentPage %> of <%= totalPages %></span>
                 </li>
 
-                <!-- NEXT BUTTON -->
                 <li class="page-item <%= currentPage == totalPages ? 'disabled' : '' %>">
                     <a class="page-link" href="/events?page=<%= currentPage + 1 %><%= query ? '&q=' + query : '' %>">Next</a>
                 </li>

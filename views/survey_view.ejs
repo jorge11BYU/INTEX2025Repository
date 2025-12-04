@@ -1,3 +1,11 @@
+<!-- 
+View Survey Response (Read-Only)
+This page allows a user (or manager) to look back at a completed survey.
+It looks almost identical to the survey form, but:
+1. All inputs are 'disabled' (greyed out) so they can't be changed.
+2. The values are pre-filled with what the user originally selected.
+3. The "Submit" button is replaced with a "Back" button.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,7 +22,7 @@
     <link rel="stylesheet" href="/css/styles.css">
 
     <style>
-        /* Custom tweaks for the rating scales */
+        /* Custom tweaks to make the read-only form look nice */
         .rating-label {
             font-weight: 600;
             margin-bottom: 0.5rem;
@@ -28,13 +36,13 @@
             margin-bottom: 5px;
             font-weight: 500;
         }
-        /* Style for checked Disabled inputs to keep them visible */
+        /* Make the selected option stand out (Solid Green) */
         .form-check-input:checked {
             background-color: #198754; 
             border-color: #198754;
-            opacity: 1; /* Force opacity so it doesn't look faded */
+            opacity: 1; 
         }
-        /* Make non-checked inputs slightly less visible to highlight the user's choice */
+        /* Make unselected options fade out so the user's choice is obvious */
         .form-check-input:disabled:not(:checked) {
             opacity: 0.4;
         }
@@ -53,10 +61,11 @@
                         
                         <div class="text-center mb-4">
                             <h2 style="font-family: 'DM Serif Display', serif;">Your Feedback</h2>
+                            <!-- Format the date nicely so it's easy to read -->
                             <p class="text-muted">You submitted this on <%= new Date(survey.submission_date).toLocaleDateString() %></p>
                         </div>
 
-                        <!-- 1. Satisfaction -->
+                        <!-- 1. Satisfaction Question -->
                         <div class="row g-4 mb-4">
                             <div class="col-md-6 border-end-md">
                                 <div class="p-2">
@@ -66,6 +75,7 @@
                                         <span>Very Satisfied</span>
                                     </div>
                                     <div class="d-flex justify-content-between px-2">
+                                        <!-- Loop 1-5 to create radio buttons. Check the one that matches the DB score. -->
                                         <% for(let i=1; i<=5; i++) { %>
                                             <div class="form-check text-center">
                                                 <input class="form-check-input" type="radio" disabled
@@ -77,7 +87,7 @@
                                 </div>
                             </div>
 
-                            <!-- 2. Usefulness -->
+                            <!-- 2. Usefulness Question -->
                             <div class="col-md-6">
                                 <div class="p-2">
                                     <label class="rating-label">Was the content useful?</label>
@@ -97,9 +107,10 @@
                                 </div>
                             </div>
                             
+                            <!-- Visual Divider -->
                             <div class="w-100 d-none d-md-block border-bottom my-2"></div>
 
-                            <!-- 3. Instructor -->
+                            <!-- 3. Instructor Question -->
                             <div class="col-md-6 border-end-md">
                                 <div class="p-2">
                                     <label class="rating-label">Instructor/Speaker Quality:</label>
@@ -119,7 +130,7 @@
                                 </div>
                             </div>
 
-                            <!-- 4. Recommend (NPS) -->
+                            <!-- 4. Recommend (NPS) Question -->
                             <div class="col-md-6">
                                 <div class="p-2">
                                     <label class="rating-label">Likelihood to recommend?</label>
@@ -141,7 +152,7 @@
 
                             <div class="w-100 d-none d-md-block border-bottom my-2"></div>
 
-                            <!-- 5. Overall -->
+                            <!-- 5. Overall Experience -->
                             <div class="col-md-6 border-end-md">
                                 <div class="p-2">
                                     <label class="rating-label">Overall Experience:</label>
@@ -161,7 +172,8 @@
                                 </div>
                             </div>
 
-                            <!-- 6. NPS Bucket -->
+                            <!-- 6. NPS Bucket (Calculated) -->
+                            <!-- This shows the user if their score counted as Detractor, Passive, or Promoter -->
                             <div class="col-md-6">
                                 <div class="p-2">
                                     <label class="rating-label">NPS Category</label>
@@ -175,15 +187,15 @@
                             </div>
                         </div>
 
-                        <!-- 7. Comments -->
+                        <!-- 7. Additional Comments -->
                         <div class="mb-4 bg-light p-3 rounded">
                             <label class="form-label fw-bold">Additional Comments</label>
                             <textarea class="form-control" rows="3" disabled><%= survey.comments || 'No comments provided.' %></textarea>
                         </div>
 
-                        <!-- Buttons -->
+                        <!-- Navigation Button -->
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <!-- DYNAMIC BACK BUTTON -->
+                            <!-- This button is smart: if we came from the events page, it goes back there. If we came from surveys, it goes back there. -->
                             <a href="/<%= source %>" class="btn btn-outline-primary px-4">
                                 <%= source === 'surveys' ? 'Back to Surveys' : 'Back to Events' %>
                             </a>

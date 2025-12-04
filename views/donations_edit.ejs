@@ -1,3 +1,7 @@
+<!-- 
+Edit Donation
+This page lets a manager fix a donation record,like correcting the amount or assigning it to the 
+right person -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,6 +24,7 @@
                         <h4 class="mb-0">Edit Donation</h4>
                     </div>
                     <div class="card-body">
+                        <!-- The form posts to the specific donation ID URL -->
                         <form action="/donations/edit/<%= donation.donation_id %>" method="POST">
                             
                             <div class="mb-3">
@@ -29,6 +34,7 @@
                                 </div>
                                 <select name="participant_id" class="form-select" required>
                                     <% participants.forEach(p => { %>
+                                        <!-- Pre-select the original donor -->
                                         <option value="<%= p.participant_id %>" 
                                             <%= p.participant_id === donation.participant_id ? 'selected' : '' %>>
                                             <%= p.last_name %>, <%= p.first_name %>
@@ -39,12 +45,13 @@
 
                             <div class="mb-3">
                                 <label class="form-label">Amount ($)</label>
+                                <!-- Pre-fill with the existing amount -->
                                 <input type="number" step="0.01" name="donation_amount" class="form-control" value="<%= donation.donation_amount %>" required>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Date</label>
-                                <!-- Format the date properly for the input field -->
+                                <!-- Date formatting tricky! We must slice the ISO string to YYYY-MM-DD for the input field to read it correctly. -->
                                 <input type="date" name="donation_date" class="form-control" value="<%= new Date(donation.donation_date).toISOString().split('T')[0] %>" required>
                             </div>
 

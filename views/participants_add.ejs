@@ -1,3 +1,7 @@
+<!-- 
+Add Participant
+This page lets managers manually add a person to the directory.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,7 +26,7 @@
                     <div class="card-body">
                         <form action="/participants/add" method="POST">
                             
-                            <!-- CRITICAL UPDATE: Hidden field to remember the return path -->
+                            <!-- HIDDEN FIELD: Remembers previous page context -->
                             <input type="hidden" name="returnTo" value="<%= typeof returnTo !== 'undefined' ? returnTo : '' %>">
                             
                             <div class="row mb-3">

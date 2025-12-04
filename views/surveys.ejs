@@ -1,24 +1,45 @@
+<!-- 
+Surveys Page
+This page lists completed survey responses.
+- Managers can see who submitted the survey and edit/delete responses.
+- Participants can see their own submission history.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <%- include('partials/head') %>
     <title>Surveys</title>
+    <style>
+        /* Custom Pagination Colors */
+        .page-link {
+            color: var(--primary-color, #198754);
+        }
+        .page-link:hover {
+            color: var(--accent-color, #146c43);
+            background-color: #f8f9fa;
+        }
+        .page-item.active .page-link {
+            background-color: var(--primary-color, #198754);
+            border-color: var(--primary-color, #198754);
+            color: white;
+        }
+    </style>
 </head>
 <body class="bg-light">
     <%- include('partials/navbar') %>
+    
     <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <!-- Dynamic Header -->
             <h2><%= isManager ? 'Survey Results' : 'My Feedback History' %></h2>
+            <!-- Only managers can manually add a survey response (e.g., from paper forms) -->
             <% if (isManager) { %>
                 <a href="/surveys/add" class="btn btn-success">Add Survey Response</a>
             <% } %>
         </div>
 
-        <!-- SEARCH BAR -->
+        <!-- Search Bar -->
         <form action="/surveys" method="GET" class="mb-4">
             <div class="input-group shadow-sm">
-                <!-- Dynamic Placeholder based on role -->
                 <input type="text" name="q" class="form-control border-0" 
                        placeholder="<%= isManager ? 'Search by name, event, date, or comments...' : 'Search by event, date, or comments...' %>" 
                        value="<%= typeof query !== 'undefined' ? query : '' %>">
@@ -29,19 +50,19 @@
             </div>
         </form>
 
+        <!-- Survey Table -->
         <div class="table-responsive bg-white shadow-sm p-3 rounded">
             <table class="table table-hover">
                 <thead class="table-light">
                     <tr>
                         <th>Date</th>
-                        <!-- Hide Participant column for regular users since they know who they are -->
+                        <!-- Managers see the participant name; Users just see the event -->
                         <% if (isManager) { %>
                             <th>Participant</th>
                         <% } %>
                         <th>Event</th>
                         <th class="text-center">Overall</th>
                         <th class="text-center">NPS</th>
-                        <!-- Actions column is now visible to everyone -->
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -61,14 +82,14 @@
                             <td class="text-center fw-bold"><%= s.score_overall %></td>
                             <td class="text-center"><%= s.score_recommendation %></td>
                             
-                            <!-- ACTIONS COLUMN -->
+                            <!-- Action Buttons -->
                             <td>
-                                <!-- 1. View Button WITH SOURCE PARAMETER -->
+                                <!-- View Button: Available to everyone so they can read the full response -->
                                 <a href="/survey/view/<%= s.survey_id %>?source=surveys" class="btn btn-sm btn-outline-secondary" title="View Answers">
                                     <i class="bi bi-eye"></i> View
                                 </a>
 
-                                <!-- 2. Manager Only Buttons -->
+                                <!-- Manager Buttons: Edit/Delete -->
                                 <% if (isManager) { %>
                                     <a href="/surveys/edit/<%= s.survey_id %>" class="btn btn-sm btn-outline-primary">Edit</a>
                                     <form action="/surveys/delete/<%= s.survey_id %>" method="POST" style="display:inline;" onsubmit="return confirm('Delete?');">
@@ -82,7 +103,7 @@
             </table>
         </div>
 
-        <!-- PAGINATION CONTROLS -->
+        <!-- Pagination Logic -->
         <% if (totalPages > 1) { %>
         <nav aria-label="Page navigation" class="mt-4">
             <ul class="pagination justify-content-center">

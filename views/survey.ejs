@@ -1,3 +1,12 @@
+<!-- 
+Survey Input Form
+This page allows participants to rate an event they attended.
+It uses a clean, grid-based layout for questions and passes data to the backend
+to be saved.
+
+The NPS Bucket (Promoter/Detractor) is calculated automatically 
+on the server side based on the "Recommend" score, so it's not shown here.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -57,6 +66,7 @@
                         <form action="/submit-survey" method="POST">
                             
                             <!-- HIDDEN FIELD: Event ID -->
+                            <!-- We need this so the backend knows which event to link this review to -->
                             <input type="hidden" name="event_id" value="<%= eventId %>">
 
                             <!-- Grid Container for Questions -->

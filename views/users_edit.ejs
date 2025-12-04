@@ -1,3 +1,8 @@
+<!-- 
+Edit User Account
+Allows managers to change passwords, update roles,
+or fix the link to a participant record if it was set incorrectly.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -35,6 +40,7 @@
                             <div class="mb-3">
                                 <label class="form-label">Role</label>
                                 <select name="role" class="form-select">
+                                    <!-- Pre-select the current role -->
                                     <option value="user" <%= userToEdit.role === 'user' ? 'selected' : '' %>>Common User</option>
                                     <option value="manager" <%= userToEdit.role === 'manager' ? 'selected' : '' %>>Manager</option>
                                 </select>
@@ -45,6 +51,7 @@
                                 <select name="participant_id" class="form-select">
                                     <option value="">-- No Link --</option>
                                     <% participants.forEach(p => { %>
+                                        <!-- Pre-select the currently linked person -->
                                         <option value="<%= p.participant_id %>" <%= p.participant_id === userToEdit.participant_id ? 'selected' : '' %>>
                                             <%= p.last_name %>, <%= p.first_name %>
                                         </option>

@@ -1,3 +1,10 @@
+<!-- 
+Sign Up Page
+This allows new users to create an account.
+Behind the scenes, this actually creates two records in our database:
+1. A "Participant" record (Name, Email)
+2. A "User" record (Username, Password) linked to that participant.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,11 +24,14 @@
                     <div class="card-body p-5">
                         <h3 class="text-center mb-4 fw-bold" style="color: var(--primary-color);">Create Account</h3>
                         
+                        <!-- Show error if username/email is taken -->
                         <% if (typeof error_message !== 'undefined' && error_message) { %>
                             <div class="alert alert-danger"><%= error_message %></div>
                         <% } %>
 
                         <form action="/signup" method="POST">
+                            
+                            <!-- Section 1: Who are you? -->
                             <h5 class="text-muted mb-3 fs-6 text-uppercase fw-bold">Personal Details</h5>
                             <div class="row mb-3">
                                 <div class="col-6">
@@ -38,6 +48,7 @@
                                 <input type="email" name="email" class="form-control" required>
                             </div>
                             
+                            <!-- Section 2: How will you log in? -->
                             <h5 class="text-muted mb-3 mt-4 fs-6 text-uppercase fw-bold">Login Credentials</h5>
                             <div class="mb-3">
                                 <label class="form-label small">Username</label>

@@ -1,3 +1,9 @@
+<!-- 
+Edit Participant
+This page allows managers to update a person's contact info.
+We pre-fill all the input fields with the data we pulled from the database
+so the manager sees the current values before changing them.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,7 +26,7 @@
                         <h4 class="mb-0">Edit Participant</h4>
                     </div>
                     <div class="card-body">
-                        <!-- Action includes the ID so the server knows who to update -->
+                        <!-- We target the specific participant ID in the route -->
                         <form action="/participants/edit/<%= participant.participant_id %>" method="POST">
                             
                             <div class="row mb-3">
@@ -46,7 +52,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Date of Birth</label>
-                                    <!-- Date inputs need YYYY-MM-DD format. We split the ISO string to get just the date part. -->
+                                    <!-- Date Formatting: We convert the DB date format to YYYY-MM-DD so the HTML input accepts it -->
                                     <input type="date" name="dob" class="form-control" value="<%= participant.dob ? new Date(participant.dob).toISOString().split('T')[0] : '' %>">
                                 </div>
                             </div>

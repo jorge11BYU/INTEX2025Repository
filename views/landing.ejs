@@ -1,3 +1,9 @@
+<!-- 
+Landing Page
+This is the public face of the website. It explains the mission ("Inspiring Young Women"),
+showcases programs (STEM, Arts), and highlights partners.
+The "Call to Action" button in the hero section changes based on login status.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,7 +13,7 @@
     <style>
         /* Landing Page Specific Styles */
         
-        /* Hero Section */
+        /* Hero Section with dark overlay */
         .hero-section {
             background: linear-gradient(rgba(29, 53, 87, 0.7), rgba(29, 53, 87, 0.7)), url('/images/hero-bg.jpg');
             background-size: cover;
@@ -25,6 +31,7 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
         
+        /* CTA Button Animation */
         .btn-cta {
             padding: 15px 40px;
             font-size: 1.2rem;
@@ -55,29 +62,27 @@
             color: var(--primary-color);
         }
 
-        /* --- UPDATED IMAGE STYLES --- */
-
-        /* 1. "What We Do" Section - Fixed Squares */
+        /* Feature Icons */
         .feature-icon {
-            width: 250px;       /* Fixed width */
-            height: 250px;      /* Fixed height = Perfect Square */
-            object-fit: cover;  /* Ensures image fills the square without distortion */
+            width: 250px;       
+            height: 250px;      
+            object-fit: cover;  
             border-radius: 15px;
             margin-bottom: 20px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
 
-        /* 2. "Our Programs" Section - Responsive Rectangles */
+        /* Program Images */
         .program-img {
-            width: 100%;        /* Forces image to fill the column width exactly */
-            height: 220px;      /* Fixed height ensures they align perfectly */
-            object-fit: cover;  /* Crops the image to fit the box */
+            width: 100%;        
+            height: 220px;      
+            object-fit: cover;  
             border-radius: 15px;
             margin-bottom: 15px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
 
-        /* Partners Section Styles */
+        /* Partner Logos (Greyscale until hovered) */
         .partner-logo {
             max-width: 150px;
             height: auto;
@@ -97,18 +102,20 @@
 
     <%- include('partials/navbar') %>
 
+    <!-- HERO HEADER -->
     <header class="hero-section">
         <div class="container">
             <h1 class="hero-title mb-3">Inspiring Young Women</h1>
             <p class="lead mb-5 fs-3">We inspire hope, resilience, and leadership by connecting young women with their community and mentors.</p>
             
+            <!-- Dynamic Call-to-Action Button -->
             <div class="d-flex justify-content-center gap-3">
                 <% if (!isLoggedIn) { %>
-                    <!-- Not Logged In: Join or Login -->
+                    <!-- Guest: Join or Login -->
                     <a href="/signup" class="btn btn-cta btn-primary" style="background-color: var(--primary-color); border: none;">Join Us</a>
                     <a href="/login" class="btn btn-cta btn-outline-light">Login</a>
                 <% } else { %>
-                    <!-- Logged In: Check Role -->
+                    <!-- Logged In User: Check Role -->
                     <% if (typeof role !== 'undefined' && (role === 'manager' || (typeof user !== 'undefined' && user === 'superuser'))) { %>
                         <a href="/dashboard" class="btn btn-cta btn-light text-dark">Go to Dashboard</a>
                     <% } else { %>
@@ -119,6 +126,7 @@
         </div>
     </header>
 
+    <!-- MISSION STATEMENT -->
     <section class="py-5 bg-white">
         <div class="container text-center">
             <div class="row justify-content-center">
@@ -134,6 +142,7 @@
         </div>
     </section>
 
+    <!-- IMPACT STATISTICS -->
     <section class="py-5" style="background-color: var(--secondary-color);">
         <div class="container">
             <div class="row text-center g-4">
@@ -159,6 +168,7 @@
         </div>
     </section>
 
+    <!-- CORE PILLARS (What We Do) -->
     <section class="py-5 bg-white">
         <div class="container">
             <div class="text-center mb-5">
@@ -191,6 +201,7 @@
         </div>
     </section>
 
+    <!-- PROGRAMS GRID -->
     <section class="py-5" style="background-color: #FFD8D1;" id="programs">
         <div class="container">
             <div class="text-center mb-5">
@@ -220,8 +231,7 @@
 
                 <div class="col-md-6 col-lg-3">
                     <div class="h-100 p-2">
-                        <!-- FIXED CAPITALIZATION HERE -->
-                        <img src="/images/steam1.jpg" alt="STEAM" class="program-img">
+                        <img src="/images/steam.jpg" alt="STEAM" class="program-img">
                         <h4 class="mt-3">STEAM</h4>
                         <p class="text-muted small">Exploring Science, Technology, Engineering, Art, and Math to inspire the next generation of innovators.</p>
                     </div>
@@ -239,6 +249,7 @@
         </div>
     </section>
 
+    <!-- JOIN CTA -->
     <section class="py-5 text-white text-center" style="background-color: var(--primary-color);">
         <div class="container">
             <h2 class="mb-4">Join the Movement</h2>
@@ -247,6 +258,7 @@
         </div>
     </section>
 
+    <!-- PARTNERS -->
     <section class="py-4" style="background-color: #fff;">
         <div class="container text-center">
             <h2 class="fw-bold mb-2" style="color: var(--primary-color);">Our Partners</h2>
@@ -258,6 +270,7 @@
             </p>
             
             <div class="row align-items-center justify-content-center mb-3">
+                <!-- Partner logos -->
                 <div class="col-6 col-md-3">
                     <img src="https://lds-business-college.brightspotcdn.com/6c/99/0317974248b7a03a5c793a124480/ensign-logo-site.svg" alt="Partner 1" class="partner-logo">
                 </div>

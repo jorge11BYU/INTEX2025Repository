@@ -1,3 +1,8 @@
+<!-- 
+Edit Survey Response
+Allows managers to correct data errors in a submitted survey.
+Unlike the read-only view, all fields here are editable.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,6 +27,7 @@
                     <div class="card-body">
                         <form action="/surveys/edit/<%= survey.survey_id %>" method="POST">
                             
+                            <!-- Links: Who and Where -->
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label">Participant</label>
@@ -45,6 +51,7 @@
                                 </div>
                             </div>
 
+                            <!-- Scores Data -->
                             <h5 class="mt-4 mb-3 border-bottom pb-2">Scores</h5>
                             <div class="row mb-3">
                                 <div class="col-md-4">

@@ -1,3 +1,9 @@
+<!-- 
+Manual Survey Entry
+This page is for Managers who need to enter survey data manually.
+(For example, if they collected paper surveys at an event and are now typing them in.)
+It allows selecting any Participant and any Event to link the feedback.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,7 +28,7 @@
                     <div class="card-body">
                         <form action="/surveys/add" method="POST">
                             
-                            <!-- Participant & Event Selection -->
+                            <!-- Step 1: Who and Where? -->
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label">Participant</label>
@@ -46,7 +52,7 @@
                                 </div>
                             </div>
 
-                            <!-- Scores Grid -->
+                            <!-- Step 2: The Data -->
                             <h5 class="mt-4 mb-3 border-bottom pb-2">Scores (1-5)</h5>
                             <div class="row mb-3">
                                 <div class="col-md-4">
@@ -73,6 +79,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">NPS Bucket</label>
+                                    <!-- In manual entry, the Manager decides the bucket, or it's calculated on submission -->
                                     <select name="nps_bucket_id" class="form-select" required>
                                         <% npsBuckets.forEach(b => { %>
                                             <option value="<%= b.nps_bucket_id %>"><%= b.nps_bucket_name %></option>

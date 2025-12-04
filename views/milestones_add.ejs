@@ -1,3 +1,11 @@
+<!-- 
+Record Milestone
+This page allows managers to officially recognize an achievement for a participant.
+It links three things together:
+1. A Person (Participant ID)
+2. An Achievement (Milestone Type ID)
+3. A Date
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,6 +23,8 @@
             <div class="card-body">
                 <h4 class="mb-4">Record Milestone</h4>
                 <form action="/milestones/add" method="POST">
+                    
+                    <!-- Select who achieved it -->
                     <div class="mb-3">
                         <label class="form-label">Participant</label>
                         <select name="participant_id" class="form-select" required>
@@ -24,6 +34,8 @@
                             <% }) %>
                         </select>
                     </div>
+
+                    <!-- Select what they achieved -->
                     <div class="mb-3">
                         <label class="form-label">Milestone Type</label>
                         <select name="milestone_type_id" class="form-select" required>
@@ -32,10 +44,12 @@
                             <% }) %>
                         </select>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label">Date Achieved</label>
                         <input type="date" name="milestone_date" class="form-control" required>
                     </div>
+
                     <button type="submit" class="btn btn-primary">Save Milestone</button>
                 </form>
             </div>
