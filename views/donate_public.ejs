@@ -1,3 +1,8 @@
+<!-- 
+Public Donation Page
+Anyone can come here to support the mission financially. If a user is already logged in, we auto-fill 
+their name and email so they don't have to type it again.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,7 +17,7 @@
 
     <%- include('partials/navbar') %>
 
-    <!-- Hero / Header Section -->
+    <!-- Hero Header -->
     <div class="container-fluid bg-primary text-white text-center py-5 mb-4" style="background-color: var(--primary-color) !important;">
         <h1 class="display-4 fw-bold">Support Our Mission</h1>
         <p class="lead">Your contribution helps empower Latinas to become leaders.</p>
@@ -22,7 +27,7 @@
         <div class="row justify-content-center">
             <div class="col-md-6">
                 
-                <!-- Success Message (passed from server) -->
+                <!-- Success Message: This only shows up after a successful POST request -->
                 <% if (typeof success_message !== 'undefined' && success_message) { %>
                     <div class="alert alert-success text-center shadow-sm" role="alert">
                         <h4 class="alert-heading">Thank You!</h4>
@@ -32,6 +37,7 @@
                     </div>
                 <% } %>
 
+                <!-- The Donation Form Card -->
                 <div class="card shadow-lg border-0">
                     <div class="card-body p-5">
                         <h3 class="card-title text-center mb-4" style="color: var(--accent-color);">Make a Donation</h3>
@@ -40,16 +46,16 @@
                             
                             <h5 class="text-muted mb-3 fs-6 text-uppercase fw-bold">Your Information</h5>
                             
+                            <!-- Personal Info Fields -->
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label">First Name</label>
-                                    <!-- UPDATED: Autofill First Name -->
+                                    <!-- SMART LOGIC: If 'participant' data exists (from session), use it. Otherwise, leave blank. -->
                                     <input type="text" name="first_name" class="form-control" required placeholder="Jane" 
                                            value="<%= (typeof participant !== 'undefined' && participant) ? participant.first_name : '' %>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Last Name</label>
-                                    <!-- UPDATED: Autofill Last Name -->
                                     <input type="text" name="last_name" class="form-control" required placeholder="Doe"
                                            value="<%= (typeof participant !== 'undefined' && participant) ? participant.last_name : '' %>">
                                 </div>
@@ -57,7 +63,7 @@
 
                             <div class="mb-4">
                                 <label class="form-label">Email Address</label>
-                                <!-- UPDATED: Autofill Email -->
+                                <!-- This is crucial for sending receipts later -->
                                 <input type="email" name="email" class="form-control" required placeholder="jane@example.com"
                                        value="<%= (typeof participant !== 'undefined' && participant) ? participant.email : '' %>">
                                 <div class="form-text">We'll send your receipt here.</div>

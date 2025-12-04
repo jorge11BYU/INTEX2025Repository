@@ -1,25 +1,50 @@
+<!-- 
+Milestones Page
+This page displays a list of achievements (milestones) for participants.
+- Managers see ALL milestones for everyone.
+- Regular users see ONLY their own milestones.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <%- include('partials/head') %>
     <title>Milestones - Ella Rises</title>
+    <style>
+        /* Custom Pagination Colors to match our Dark Grey/Pink theme */
+        .page-link {
+            color: var(--primary-color, #198754);
+        }
+        .page-link:hover {
+            color: var(--accent-color, #146c43);
+            background-color: #f8f9fa;
+        }
+        .page-item.active .page-link {
+            background-color: var(--primary-color, #198754);
+            border-color: var(--primary-color, #198754);
+            color: white;
+        }
+    </style>
 </head>
 <body class="bg-light">
+    <!-- Navbar partial handles the logo, links, and profile picture -->
     <%- include('partials/navbar') %>
+    
     <div class="container py-4">
+        <!-- Header Section -->
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <!-- DYNAMIC HEADER -->
+            <!-- Dynamic Header: Changes text based on who is looking at it -->
             <h2><%= isManager ? 'Participant Milestones' : 'My Milestones' %></h2>
             
+            <!-- Only Managers can add new milestones -->
             <% if (isManager) { %>
                 <a href="/milestones/add" class="btn btn-success">Record Milestone</a>
             <% } %>
         </div>
 
-        <!-- SEARCH BAR -->
+        <!-- Search Bar Section -->
         <form action="/milestones" method="GET" class="mb-4">
             <div class="input-group shadow-sm">
-                <!-- Dynamic Placeholder based on role -->
+                <!-- Search inputs allow users to filter the list -->
                 <input type="text" name="q" class="form-control border-0" 
                        placeholder="<%= isManager ? 'Search by name, title, or date...' : 'Search by title or date...' %>" 
                        value="<%= typeof query !== 'undefined' ? query : '' %>">
@@ -30,13 +55,14 @@
             </div>
         </form>
 
+        <!-- Data Table -->
         <div class="table-responsive bg-white shadow-sm p-3 rounded">
             <table class="table table-hover">
                 <thead class="table-light">
                     <tr>
                         <th>Date</th>
                         
-                        <!-- Hide Participant column for regular users (since it's their own list) -->
+                        <!-- We hide the 'Participant' column for regular users because they only see their own rows -->
                         <% if (isManager) { %>
                             <th>Participant</th>
                         <% } %>
@@ -46,10 +72,12 @@
                     </tr>
                 </thead>
                 <tbody>
+                    <!-- Empty State: Show this row if no data exists -->
                     <% if (milestones.length === 0) { %>
-                        <!-- Dynamic colspan to match visible columns -->
                         <tr><td colspan="<%= isManager ? 4 : 2 %>" class="text-center text-muted py-4">No records found.</td></tr>
                     <% } %>
+                    
+                    <!-- Loop through each milestone and create a row -->
                     <% milestones.forEach(m => { %>
                         <tr>
                             <td><%= new Date(m.milestone_date).toLocaleDateString() %></td>
@@ -60,6 +88,7 @@
                             
                             <td><span class="badge bg-info text-dark"><%= m.milestone_title %></span></td>
                             
+                            <!-- Manager Controls: Edit and Delete buttons -->
                             <% if (isManager) { %>
                                 <td>
                                     <a href="/milestones/edit/<%= m.milestone_id %>" class="btn btn-sm btn-outline-primary">Edit</a>
@@ -74,7 +103,8 @@
             </table>
         </div>
 
-        <!-- PAGINATION CONTROLS -->
+        <!-- Pagination Controls -->
+        <!-- Only show these buttons if there is more than 1 page of data -->
         <% if (totalPages > 1) { %>
         <nav aria-label="Page navigation" class="mt-4">
             <ul class="pagination justify-content-center">

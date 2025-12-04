@@ -1,53 +1,57 @@
-/* Ella Rises Theme */
+/* Ella Rises Main Stylesheet
+This file controls the look and feel of the entire website.
+It defines our brand colors, fonts, and overrides standard Bootstrap styles
+to ensure everything matches the "Ella Rises" theme.
+*/
 
-/* --- 1. FONTS SETUP --- */
-/* (TT Milk Script removed) */
-
+/* --- 1. THEME VARIABLES --- */
 :root {
-    /* Ella Rises Brand Colors */
-    --primary-color: #3A3F3B; /* Dark Grey */
-    --secondary-color: #F9F5EA; /* Off-white */
-    --accent-color: #F9AFB1; /* Pink */
+    /* Brand Colors: Dark Grey for text/primary elements, Pink for accents */
+    --primary-color: #3A3F3B; 
+    --secondary-color: #F9F5EA; /* Off-white background */
+    --accent-color: #F9AFB1; /* Soft Pink */
     
-    /* Text Colors */
+    /* Standard Text Colors */
     --text-dark: #333333;
     --text-light: #ffffff;
 
-    /* --- FONT VARIABLES --- */
-    --font-heading: 'DM Serif Display', serif; /* Google Font */
-    --font-body: 'Montserrat', sans-serif;     /* Google Font */
-    
-    /* Fallback: Mapped to Heading font since Script is removed */
+    /* Fonts: 'DM Serif Display' for elegant headings, 'Montserrat' for readable body text */
+    --font-heading: 'DM Serif Display', serif;
+    --font-body: 'Montserrat', sans-serif;     
     --font-accent: 'DM Serif Display', serif;  
 }
 
-/* --- 2. GLOBAL STYLES --- */
+/* --- 2. GLOBAL DEFAULTS --- */
 body {
-    font-family: var(--font-body); /* Applied Montserrat globally */
+    font-family: var(--font-body);
     background-color: var(--secondary-color);
     color: var(--text-dark);
 }
 
-/* Headings automatically use DM Serif Display */
+/* Apply the serif font to all headings for a consistent brand voice */
 h1, h2, h3, h4, h5, .display-1, .display-2, .display-3, .display-4 {
     font-family: var(--font-heading);
     font-weight: 400; 
 }
 
-/* Utility Class */
+/* Helper class for accent text */
 .text-accent {
     font-family: var(--font-accent);
 }
 
-/* --- 3. CUSTOM NAVBAR --- */
+/* --- 3. CUSTOM NAVBAR STYLING --- */
+/* We use the pink accent color for the navbar background */
 .navbar-custom {
     background-color: var(--accent-color);
 }
-/* Navbar links need to be dark because the background is light pink */
+
+/* Ensure links are dark grey so they are readable against the pink */
 .navbar-custom .navbar-brand, .navbar-custom .nav-link {
     color: var(--text-dark) !important; 
     font-weight: 600;
 }
+
+/* Hover effect: underline and change color slightly */
 .navbar-custom .nav-link:hover {
     color: var(--primary-color) !important;
     text-decoration: underline;
@@ -55,34 +59,38 @@ h1, h2, h3, h4, h5, .display-1, .display-2, .display-3, .display-4 {
 
 /* --- 4. LANDING PAGE HERO SECTION --- */
 .hero-section {
-    /* Using your Pink accent with opacity for the overlay */
+    /* We overlay a pink gradient on the hero image to make white text pop */
     background: linear-gradient(rgba(249, 175, 177, .8), rgba(249, 175, 177, .8)), url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1351&q=80');
     background-size: cover;
     background-position: center;
-    color: var(--text-dark); /* Changed to dark text for better contrast on pink */
+    color: var(--text-dark);
     padding: 100px 0;
     text-align: center;
 }
 
-/* --- 5. DASHBOARD CARDS --- */
+/* --- 5. COMPONENT STYLING --- */
+
+/* Dashboard Cards: Clean white boxes with a left border accent */
 .stat-card {
     border-left: 5px solid var(--primary-color);
     background-color: #ffffff; 
     transition: transform 0.2s;
 }
+/* Lift effect on hover */
 .stat-card:hover {
     transform: translateY(-5px);
 }
 
-/* Tables */
+/* Table container styling */
 .table-responsive {
     background-color: #ffffff;
     border-radius: 8px;
 }
 
 /* --- 6. BOOTSTRAP OVERRIDES --- */
+/* We overrode default Bootstrap buttons to match our theme colors */
 
-/* Red Buttons (btn-danger) -> Now mapped to your PRIMARY (Dark Grey) */
+/* "Danger" buttons (Delete/Refund) -> Dark Grey */
 .btn-danger {
     background-color: var(--primary-color) !important;
     border-color: var(--primary-color) !important;
@@ -93,7 +101,7 @@ h1, h2, h3, h4, h5, .display-1, .display-2, .display-3, .display-4 {
     filter: brightness(1.2); 
 }
 
-/* Primary Buttons (btn-primary) -> Dark Grey */
+/* "Primary" buttons are Dark Grey */
 .btn-primary {
     background-color: var(--primary-color) !important;
     border-color: var(--primary-color) !important;
@@ -104,18 +112,18 @@ h1, h2, h3, h4, h5, .display-1, .display-2, .display-3, .display-4 {
     filter: brightness(1.2);
 }
 
-/* Navy/Success Buttons (btn-success) -> Pink Accent */
+/* "Success" buttons are pink */
 .btn-success {
     background-color: var(--accent-color) !important;
     border-color: var(--accent-color) !important;
-    color: var(--text-dark) !important; /* Dark text on pink background */
+    color: var(--text-dark) !important;
 }
 .btn-success:hover {
     background-color: var(--accent-color) !important;
     filter: brightness(0.95); 
 }
 
-/* Outline Buttons */
+/* Outline buttons */
 .btn-outline-primary {
     color: var(--primary-color) !important;
     border-color: var(--primary-color) !important;
@@ -125,47 +133,42 @@ h1, h2, h3, h4, h5, .display-1, .display-2, .display-3, .display-4 {
     color: var(--text-light) !important;
 }
 
-/* Text Utilities */
+/* Helper utility classes */
 .text-primary {
     color: var(--primary-color) !important;
 }
 .bg-primary {
     background-color: var(--primary-color) !important;
 }
-
-/* Donation Amounts (text-success was Green) -> Now Dark Grey */
 .text-success {
     color: var(--primary-color) !important;
 }
-
-/* Milestones Badges (bg-info was Blue) -> Now Pink Accent */
 .bg-info {
     background-color: var(--accent-color) !important;
     color: var(--text-dark) !important;
 }
 
-/* --- 7. PAGINATION OVERRIDES --- */
-/* Override default Bootstrap blue pagination links */
+/* --- 7. PAGINATION STYLING --- */
+/* Override default blue pagination links to use our Grey/Pink theme */
 .page-link {
-    color: var(--primary-color) !important; /* Dark Grey text */
-    border-color: #dee2e6; /* Standard Bootstrap border color */
+    color: var(--primary-color) !important;
+    border-color: #dee2e6;
 }
 
 .page-link:hover {
-    color: var(--accent-color) !important; /* Pink on hover */
-    background-color: #f8f9fa; /* Light grey background on hover */
+    color: var(--accent-color) !important;
+    background-color: #f8f9fa;
     border-color: #dee2e6;
 }
 
 .page-item.active .page-link {
-    background-color: var(--primary-color) !important; /* Dark Grey background for active page */
+    background-color: var(--primary-color) !important;
     border-color: var(--primary-color) !important;
-    color: var(--text-light) !important; /* White text */
+    color: var(--text-light) !important;
 }
 
-/* Disabled state */
 .page-item.disabled .page-link {
-    color: #6c757d !important; /* Muted grey */
+    color: #6c757d !important;
     pointer-events: none;
     background-color: #fff;
     border-color: #dee2e6;

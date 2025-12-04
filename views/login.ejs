@@ -1,3 +1,10 @@
+<!-- 
+Login Page
+The gateway to the secure parts of the site.
+It's a simple form that asks for a username and password.
+If something goes wrong (like a wrong password), the server sends back an 'error_message'
+which we display in a red alert box.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,12 +28,14 @@
                     <div class="card-body p-4">
                         <h3 class="text-center mb-4 text-dark fw-bold">Login</h3>
 
+                        <!-- Error Handling: Only show this red box if there is actually an error -->
                         <% if (error_message && error_message !== "") { %>
                             <div class="alert alert-danger text-center" role="alert">
                                 <%= error_message %>
                             </div>
                         <% } %>
 
+                        <!-- The Login Form -->
                         <form action="/login" method="POST">
                             <div class="mb-3">
                                 <label for="username" class="form-label">Username</label>
@@ -42,6 +51,8 @@
                         </form>
                     </div>
                 </div>
+                
+                <!-- Navigation Helper -->
                 <div class="text-center mt-3">
                     <a href="/" class="text-muted text-decoration-none">Back to Home</a>
                 </div>

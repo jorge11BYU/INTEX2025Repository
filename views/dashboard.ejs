@@ -1,3 +1,8 @@
+<!-- 
+Manager Dashboard
+This page displays key statistics and an embedded Tableau dashboard for deep data analysis.
+Regular users are redirected away from this page.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,22 +10,17 @@
     <title>Dashboard - Ella Rises</title>
     
     <style>
-        /* UPDATED TABLEAU STYLES FOR CENTERED FIXED WIDTH */
+        /* This CSS ensures the Tableau dashboard fits nicely inside our container */
         .tableauPlaceholder {
-            /* This ensures the container takes full available width */
             width: 100%;
-            /* This adds a scrollbar if the dashboard is wider than the screen */
-            overflow-x: auto;
-            /* Smooth scrolling experience */
+            overflow-x: auto; /* Allows scrolling if the chart is too wide for the screen */
             -webkit-overflow-scrolling: touch;
-            /* CENTER THE CONTENT */
             display: flex;
             justify-content: center;
         }
         
-        /* We removed the '!important' width here so the JS can set a fixed pixel width */
         .tableauViz {
-            margin: 0 auto; /* Redundant if flex works, but good fallback */
+            margin: 0 auto;
         }
     </style>
 </head>
@@ -29,10 +29,11 @@
     <%- include('partials/navbar') %>
 
     <div class="container py-4">
+        <!-- Personalized Greeting based on Time of Day -->
         <h2 class="mb-4"><%= greeting %>, <%= user %>!</h2>
         <p class="text-muted">Role: <strong><%= role.toUpperCase() %></strong></p>
 
-        <!-- Stats Cards -->
+        <!-- Top-level Stats Cards -->
         <div class="row mb-5">
             <div class="col-md-4">
                 <div class="card stat-card shadow-sm mb-3">
@@ -60,10 +61,10 @@
             </div>
         </div>
 
-        <!-- TABLEAU DASHBOARD SECTION -->
+        <!-- Tableau Dashboard Container -->
         <div class="card shadow-sm p-4 mb-5">
             
-            <!-- New Tableau Embed Code (Updated ID: viz1764868703480) -->
+            <!-- We embed the Tableau visualization here using their generated script -->
             <div class='tableauPlaceholder' id='viz1764868703480' style='position: relative'>
                 <noscript>
                     <a href='#'>
@@ -92,10 +93,7 @@
                 var divElement = document.getElementById('viz1764868703480');
                 var vizElement = divElement.getElementsByTagName('object')[0];
                 
-                // --- FIXED SIZING LOGIC ---
-                // We force the specific width/height you requested.
-                // 1150px width
-                // 850px height
+                // We manually set the size to ensure it looks consistent (1150x850)
                 vizElement.style.width = '1150px';
                 vizElement.style.height = '850px';
                 
@@ -103,7 +101,6 @@
                 scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';
                 vizElement.parentNode.insertBefore(scriptElement, vizElement);
             </script>
-            <!-- End Tableau Embed Code -->
             
         </div>
 

@@ -1,3 +1,7 @@
+<!-- 
+Edit Event
+This page lets managers reschedule events or change locations.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,21 +19,30 @@
             <div class="card-body">
                 <h4 class="mb-4">Edit Event Occurrence</h4>
                 <form action="/events/edit/<%= event.event_occurrence_id %>" method="POST">
+                    
                     <div class="mb-3">
                         <label class="form-label">Event Template</label>
                         <select name="event_template_id" class="form-select" required>
                             <% templates.forEach(t => { %>
+                                <!-- Pre-select the original template -->
                                 <option value="<%= t.event_template_id %>" <%= t.event_template_id === event.event_template_id ? 'selected' : '' %>><%= t.event_name %></option>
                             <% }) %>
                         </select>
                     </div>
-                    <!-- Helper function to format datetime for input -->
+
+                    <!-- 
+                    
+                      HTML <input type="datetime-local"> is very picky. It needs the format "YYYY-MM-DDTHH:MM".
+                      Since the database gives us a full date object (often in UTC), we adjust for the timezone
+                      offset here so the user sees the time in their local clock, not UTC.
+                    -->
                     <% 
                     const formatDateTime = (dateStr) => {
                         const d = new Date(dateStr);
                         return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
                     }
                     %>
+
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Start Time</label>
@@ -40,6 +53,7 @@
                             <input type="datetime-local" name="end_time" class="form-control" value="<%= formatDateTime(event.end_time) %>" required>
                         </div>
                     </div>
+
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Location</label>
@@ -54,6 +68,7 @@
                             <input type="number" name="capacity" class="form-control" value="<%= event.capacity %>" required>
                         </div>
                     </div>
+
                     <button type="submit" class="btn btn-primary">Update Event</button>
                 </form>
             </div>

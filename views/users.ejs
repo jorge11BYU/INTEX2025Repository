@@ -1,3 +1,9 @@
+<!-- 
+User Management Dashboard
+This page is strictly for Managers. It lists every login account on the website.
+Here, you can see who has access, what their role is (Manager vs User),
+and which real-world participant they are linked to.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,7 +24,7 @@
             <a href="/users/add" class="btn btn-success">Create New User</a>
         </div>
 
-        <!-- SEARCH BAR (Updated Placeholder) -->
+        <!-- Search Bar -->
         <form action="/users" method="GET" class="mb-4">
             <div class="input-group shadow-sm">
                 <input type="text" name="q" class="form-control border-0" placeholder="Search by username, role, or participant name..." value="<%= typeof query !== 'undefined' ? query : '' %>">
@@ -48,6 +54,8 @@
                         <tr>
                             <td><%= u.user_id %></td>
                             <td class="fw-bold"><%= u.username %></td>
+                            
+                            <!-- Visual Badges for Roles make it easy to spot Managers -->
                             <td>
                                 <% if (u.role === 'manager') { %>
                                     <span class="badge bg-danger">Manager</span>
@@ -55,6 +63,8 @@
                                     <span class="badge bg-secondary">User</span>
                                 <% } %>
                             </td>
+                            
+                            <!-- Check if this login is connected to a real person in the database -->
                             <td>
                                 <% if (u.first_name) { %>
                                     <%= u.first_name %> <%= u.last_name %>
@@ -62,8 +72,10 @@
                                     <span class="text-muted fst-italic">Not Linked</span>
                                 <% } %>
                             </td>
+                            
                             <td>
                                 <a href="/users/edit/<%= u.user_id %>" class="btn btn-sm btn-outline-primary">Edit</a>
+                                <!-- Delete Button: Warning message clarifies we are deleting the LOGIN, not the PERSON -->
                                 <form action="/users/delete/<%= u.user_id %>" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure? This deletes the LOGIN, not the participant data.');">
                                     <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                                 </form>

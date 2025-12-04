@@ -1,33 +1,51 @@
+<!-- 
+  Main Navigation Bar
+  This partial is included on every page. It adapts based on user login status.
+  - Guests see: Home, Donate, Login, Sign Up.
+  - Regular Users see: Engagement links (Events, Surveys, etc.) and their Profile.
+  - Managers see: All user links PLUS the Dashboard and Admin Controls.
+-->
 <nav class="navbar navbar-expand-lg navbar-custom shadow-sm">
     <div class="container">
+      <!-- Logo: Links back to home -->
       <a class="navbar-brand" href="/">
         <img src="/images/logo.png" alt="Ella Rises" height="50">
       </a>
+      
+      <!-- Mobile Menu Toggle Button -->
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
       </button>
+      
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto align-items-center">
+          
+          <!-- Public Link: Everyone can go Home -->
           <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
           
+          <!-- Donate Link: Prominent for guests -->
           <% if (typeof isLoggedIn === 'undefined' || !isLoggedIn) { %>
             <li class="nav-item"><a class="nav-link fw-bold" href="/donate">Donate</a></li>
           <% } %>
 
+          <!-- LOGGED IN USER SECTION -->
           <% if (typeof isLoggedIn !== 'undefined' && isLoggedIn) { %>
             
-            <!-- MANAGER ONLY: Dashboard Link -->
+            <!-- Dashboard Link: ONLY visible to Managers/Superusers -->
             <% if (typeof role !== 'undefined' && (role === 'manager' || (typeof user !== 'undefined' && user === 'superuser'))) { %>
                 <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
             <% } %>
             
+            <!-- Main Dropdown Menu -->
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                 Menu
               </a>
               <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="navbarDropdown" style="border-top: 4px solid var(--primary-color) !important;">
                 
+                <!-- Engagement Section: Standard features for all users -->
                 <li><h6 class="dropdown-header text-uppercase small" style="color: var(--primary-color); font-weight: bold;">Engagement</h6></li>
+                <!-- Label changes based on role (Participants vs Personal Info) -->
                 <li><a class="dropdown-item" href="/participants"><%= (typeof role !== 'undefined' && role === 'manager') ? 'Participants' : 'Personal Info' %></a></li>
                 <li><a class="dropdown-item" href="/events">Events</a></li>
                 <li><a class="dropdown-item" href="/surveys">Surveys</a></li>
@@ -35,9 +53,11 @@
                 
                 <li><hr class="dropdown-divider"></li>
                 
+                <!-- Support Section -->
                 <li><h6 class="dropdown-header text-uppercase small" style="color: var(--primary-color); font-weight: bold;">Support</h6></li>
                 <li><a class="dropdown-item" href="/donations">Donate</a></li>
                 
+                <!-- Admin Section: Only visible to Managers -->
                 <% if (typeof role !== 'undefined' && role === 'manager') { %>
                    <li><hr class="dropdown-divider"></li>
                    <li><h6 class="dropdown-header text-uppercase small" style="color: var(--primary-color); font-weight: bold;">Admin Controls</h6></li>
@@ -46,6 +66,7 @@
               </ul>
             </li>
 
+            <!-- Profile Picture: Shows uploaded photo or Initials -->
             <li class="nav-item ms-3 me-2">
                 <a href="/participants" title="Update Profile Photo">
                     <% if (typeof userProfilePic !== 'undefined' && userProfilePic) { %>
@@ -58,10 +79,13 @@
                 </a>
             </li>
             
+            <!-- Logout Button -->
             <li class="nav-item">
                 <a class="nav-link btn btn-sm btn-outline-light px-3" href="/logout">Logout</a>
             </li>
+
           <% } else { %>
+            <!-- GUEST SECTION: Login Button -->
             <li class="nav-item">
                 <a class="nav-link" href="/login">Login</a>
             </li>

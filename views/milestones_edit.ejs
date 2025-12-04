@@ -1,3 +1,8 @@
+<!-- 
+Edit Milestone
+This page allows managers to fix details about an achievement (e.g., wrong date or wrong person).
+We also make sure the original values are selected when the page loads.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,26 +20,33 @@
             <div class="card-body">
                 <h4 class="mb-4">Edit Milestone</h4>
                 <form action="/milestones/edit/<%= milestone.milestone_id %>" method="POST">
+                    
                     <div class="mb-3">
                         <label class="form-label">Participant</label>
                         <select name="participant_id" class="form-select" required>
                             <% participants.forEach(p => { %>
+                                <!-- Check if this participant matches the one currently saved on the milestone -->
                                 <option value="<%= p.participant_id %>" <%= p.participant_id === milestone.participant_id ? 'selected' : '' %>><%= p.last_name %>, <%= p.first_name %></option>
                             <% }) %>
                         </select>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label">Milestone Type</label>
                         <select name="milestone_type_id" class="form-select" required>
                             <% types.forEach(t => { %>
+                                <!-- Check if this type matches the saved type -->
                                 <option value="<%= t.milestone_type_id %>" <%= t.milestone_type_id === milestone.milestone_type_id ? 'selected' : '' %>><%= t.milestone_title %></option>
                             <% }) %>
                         </select>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label">Date Achieved</label>
+                        <!-- Format the date string so the input control can display it correctly -->
                         <input type="date" name="milestone_date" class="form-control" value="<%= new Date(milestone.milestone_date).toISOString().split('T')[0] %>" required>
                     </div>
+
                     <button type="submit" class="btn btn-primary">Update Milestone</button>
                 </form>
             </div>

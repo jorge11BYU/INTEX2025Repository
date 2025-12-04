@@ -1,3 +1,8 @@
+<!-- 
+Record Donation (Manager View)
+This page allows Managers to manually enter a donation (e.g., checks received in the mail).
+It connects the money to a specific person in our database.
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,17 +27,20 @@
                     <div class="card-body">
                         <form action="/donations/add" method="POST">
                             
+                            <!-- Participant Selector -->
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between">
                                     <label class="form-label">Donor (Participant)</label>
-                                    <!-- Helper link: Pass 'returnTo' so the server knows where to send us back -->
+                                    <!-- Helpful Link: If the donor isn't in the system yet, this jumps to the "Add Person" page.
+                                         We pass '?returnTo=donations_add' so the system knows to bring us back here after. -->
                                     <a href="/participants/add?returnTo=donations_add" class="text-decoration-none small">+ Add New Person</a>
                                 </div>
-                                <!-- This dropdown gets populated from the 'participants' list passed by index.js -->
+                                
+                                <!-- Dropdown list of all people in the database -->
                                 <select name="participant_id" class="form-select" required>
                                     <option value="">Select a person...</option>
                                     <% participants.forEach(p => { %>
-                                        <!-- Check if this person matches the 'newParticipantId' passed from the server -->
+                                        <!-- Logic: If we just created a new person, auto-select them here -->
                                         <option value="<%= p.participant_id %>" 
                                             <%= (typeof newParticipantId !== 'undefined' && newParticipantId == p.participant_id) ? 'selected' : '' %>>
                                             <%= p.last_name %>, <%= p.first_name %>
