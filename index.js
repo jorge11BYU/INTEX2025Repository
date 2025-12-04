@@ -237,7 +237,6 @@ app.get("/dashboard", isLoggedIn, async (req, res) => {
     // ------------------------------
 
     // --- CAPITALIZE USERNAME ---
-    // This ensures "spencer" becomes "Spencer"
     let displayUser = req.session.username;
     if (displayUser) {
         displayUser = displayUser.charAt(0).toUpperCase() + displayUser.slice(1);
@@ -254,35 +253,57 @@ app.get("/dashboard", isLoggedIn, async (req, res) => {
         
     } catch (e) { console.error(e); }
     
-    // Pass the capitalized 'displayUser' instead of raw session username
     res.render("dashboard", { greeting, user: displayUser, stats });
 });
 
-// 4. PARTICIPANTS
+// 4. PARTICIPANTS (FIXED PAGINATION ERROR)
 app.get("/participants", isLoggedIn, async (req, res) => {
-    let query = db("participants").select("*").orderBy("participant_id");
+    const page = parseInt(req.query.page) || 1;
+    const limit = 100;
+    const offset = (page - 1) * limit;
     const searchQuery = req.query.q;
 
-    if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
-        query = query.where('participant_id', req.session.participantId);
-    }
+    // --- STEP A: Build the Filter Logic Logic (Reused for both Count and Data) ---
+    // We create a helper function or simply rebuild the query logic twice to avoid state pollution.
+    const applyFilters = (builder) => {
+        if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
+            builder.where('participant_id', req.session.participantId);
+        }
+        if (searchQuery) {
+            builder.andWhere(subBuilder => {
+                subBuilder.where('first_name', 'ilike', `%${searchQuery}%`)
+                       .orWhere('last_name', 'ilike', `%${searchQuery}%`)
+                       .orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", [`%${searchQuery}%`])
+                       .orWhere('email', 'ilike', `%${searchQuery}%`)
+                       .orWhere('city', 'ilike', `%${searchQuery}%`);
+            });
+        }
+    };
 
-    if (searchQuery) {
-        query = query.andWhere(builder => {
-            builder.where('first_name', 'ilike', `%${searchQuery}%`)
-                   .orWhere('last_name', 'ilike', `%${searchQuery}%`)
-                   .orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", [`%${searchQuery}%`])
-                   .orWhere('email', 'ilike', `%${searchQuery}%`)
-                   .orWhere('city', 'ilike', `%${searchQuery}%`);
+    try {
+        // --- STEP B: Count Query (Clean) ---
+        const countQuery = db("participants").count("participant_id as count").first();
+        applyFilters(countQuery);
+        const countResult = await countQuery;
+        const totalCount = parseInt(countResult.count);
+        const totalPages = Math.ceil(totalCount / limit);
+
+        // --- STEP C: Data Query (Clean) ---
+        const dataQuery = db("participants").select("*").orderBy("participant_id").limit(limit).offset(offset);
+        applyFilters(dataQuery);
+        const participants = await dataQuery;
+
+        res.render("participants", { 
+            participants, 
+            isManager: req.session.role === 'manager', 
+            query: searchQuery,
+            currentPage: page,
+            totalPages: totalPages
         });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error fetching participants");
     }
-
-    const participants = await query;
-    res.render("participants", { 
-        participants, 
-        isManager: req.session.role === 'manager', 
-        query: searchQuery 
-    });
 });
 
 // --- UPLOAD IMAGE ROUTE (Updated) ---
@@ -388,7 +409,6 @@ app.post("/participants/delete/:id", isManager, async (req, res) => {
             await trx("milestones").where({ participant_id: targetId }).del();
             
             // C. Delete the User Login (if they have one)
-            // Note: Users table likely links to participant_id
             await trx("users").where({ participant_id: targetId }).del();
 
             // D. Finally, delete the Participant
@@ -399,49 +419,67 @@ app.post("/participants/delete/:id", isManager, async (req, res) => {
 
     } catch (err) {
         console.error("Delete Error:", err);
-        // If it fails (e.g., another unknown table links to them), send a friendly error
         res.status(500).send("Error deleting participant. They may have other linked records.");
     }
 });
-// ---------------------------------------------
 
 // 5. DONATIONS
 app.get("/donations", isLoggedIn, async (req, res) => {
-    let query = db("donations")
-        .join("participants", "donations.participant_id", "participants.participant_id")
-        .select("donations.*", "participants.first_name", "participants.last_name")
-        .orderBy("donations.donation_date", "desc");
+    const page = parseInt(req.query.page) || 1;
+    const limit = 100;
+    const offset = (page - 1) * limit;
     const searchQuery = req.query.q;
 
-    if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
-        query = query.where('donations.participant_id', req.session.participantId);
-    }
-
-    if (searchQuery) {
-        query = query.andWhere(builder => {
-            // 1. Search by Name
-            builder.where('participants.first_name', 'ilike', `%${searchQuery}%`)
+    const applyFilters = (builder) => {
+        if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
+            builder.where('donations.participant_id', req.session.participantId);
+        }
+        if (searchQuery) {
+            builder.andWhere(sub => {
+                // 1. Search by Name (requires join in main query)
+                sub.where('participants.first_name', 'ilike', `%${searchQuery}%`)
                    .orWhere('participants.last_name', 'ilike', `%${searchQuery}%`)
                    .orWhereRaw("CONCAT(participants.first_name, ' ', participants.last_name) ILIKE ?", [`%${searchQuery}%`]);
-            
-            // 2. Search by Amount
-            if (!isNaN(searchQuery)) {
-                builder.orWhere('donation_amount', '=', searchQuery);
-            }
-
-            // 3. Search by Date (ADDED THIS)
-            builder.orWhereRaw("TO_CHAR(donations.donation_date, 'MM/DD/YYYY') ILIKE ?", [`%${searchQuery}%`])
+                
+                // 2. Search by Amount
+                if (!isNaN(searchQuery)) {
+                    sub.orWhere('donation_amount', '=', searchQuery);
+                }
+                // 3. Search by Date
+                sub.orWhereRaw("TO_CHAR(donations.donation_date, 'MM/DD/YYYY') ILIKE ?", [`%${searchQuery}%`])
                    .orWhereRaw("TO_CHAR(donations.donation_date, 'YYYY-MM-DD') ILIKE ?", [`%${searchQuery}%`])
                    .orWhereRaw("TO_CHAR(donations.donation_date, 'Month') ILIKE ?", [`%${searchQuery}%`]);
-        });
-    }
+            });
+        }
+    };
 
-    const donations = await query;
-    res.render("donations", { 
-        donations, 
-        isManager: req.session.role === 'manager', 
-        query: searchQuery 
-    });
+    try {
+        // Count Query
+        const countQuery = db("donations")
+            .join("participants", "donations.participant_id", "participants.participant_id")
+            .count("donations.donation_id as count").first();
+        applyFilters(countQuery);
+        const countResult = await countQuery;
+        const totalPages = Math.ceil(parseInt(countResult.count) / limit);
+
+        // Data Query
+        const dataQuery = db("donations")
+            .join("participants", "donations.participant_id", "participants.participant_id")
+            .select("donations.*", "participants.first_name", "participants.last_name")
+            .orderBy("donations.donation_date", "desc")
+            .limit(limit)
+            .offset(offset);
+        applyFilters(dataQuery);
+        const donations = await dataQuery;
+
+        res.render("donations", { 
+            donations, 
+            isManager: req.session.role === 'manager', 
+            query: searchQuery,
+            currentPage: page,
+            totalPages: totalPages
+        });
+    } catch(e) { console.error(e); res.status(500).send("Error"); }
 });
 
 app.get("/donations/add", isManager, async (req, res) => {
@@ -563,21 +601,18 @@ app.post("/submit-survey", isLoggedIn, async (req, res) => {
 // -----------------------------------
 
 app.get("/surveys", isLoggedIn, async (req, res) => {
-    let query = db("surveys")
-        .join("participants", "surveys.participant_id", "participants.participant_id")
-        .join("event_occurrences", "surveys.event_occurrence_id", "event_occurrences.event_occurrence_id")
-        .join("event_templates", "event_occurrences.event_template_id", "event_templates.event_template_id")
-        .select("surveys.*", "participants.first_name", "participants.last_name", "event_templates.event_name", "event_occurrences.start_time")
-        .orderBy("surveys.submission_date", "desc");
+    const page = parseInt(req.query.page) || 1;
+    const limit = 100;
+    const offset = (page - 1) * limit;
     const searchQuery = req.query.q;
 
-    if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
-        query = query.where('surveys.participant_id', req.session.participantId);
-    }
-
-    if (searchQuery) {
-        query = query.andWhere(builder => {
-            builder.where('participants.first_name', 'ilike', `%${searchQuery}%`)
+    const applyFilters = (builder) => {
+        if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
+            builder.where('surveys.participant_id', req.session.participantId);
+        }
+        if (searchQuery) {
+            builder.andWhere(sub => {
+                sub.where('participants.first_name', 'ilike', `%${searchQuery}%`)
                    .orWhere('participants.last_name', 'ilike', `%${searchQuery}%`)
                    .orWhereRaw("CONCAT(participants.first_name, ' ', participants.last_name) ILIKE ?", [`%${searchQuery}%`])
                    .orWhere('event_templates.event_name', 'ilike', `%${searchQuery}%`)
@@ -587,15 +622,39 @@ app.get("/surveys", isLoggedIn, async (req, res) => {
                    .orWhereRaw("TO_CHAR(surveys.submission_date, 'YYYY-MM-DD') ILIKE ?", [`%${searchQuery}%`])
                    .orWhereRaw("TO_CHAR(event_occurrences.start_time, 'MM/DD/YYYY') ILIKE ?", [`%${searchQuery}%`])
                    .orWhereRaw("TO_CHAR(event_occurrences.start_time, 'fmMM/fmDD/YYYY') ILIKE ?", [`%${searchQuery}%`]);
-        });
-    }
+            });
+        }
+    };
 
-    const surveys = await query;
-    res.render("surveys", { 
-        surveys, 
-        isManager: req.session.role === 'manager', 
-        query: searchQuery 
-    });
+    try {
+        const countQuery = db("surveys")
+            .join("participants", "surveys.participant_id", "participants.participant_id")
+            .join("event_occurrences", "surveys.event_occurrence_id", "event_occurrences.event_occurrence_id")
+            .join("event_templates", "event_occurrences.event_template_id", "event_templates.event_template_id")
+            .count("surveys.survey_id as count").first();
+        applyFilters(countQuery);
+        const countResult = await countQuery;
+        const totalPages = Math.ceil(parseInt(countResult.count) / limit);
+
+        const dataQuery = db("surveys")
+            .join("participants", "surveys.participant_id", "participants.participant_id")
+            .join("event_occurrences", "surveys.event_occurrence_id", "event_occurrences.event_occurrence_id")
+            .join("event_templates", "event_occurrences.event_template_id", "event_templates.event_template_id")
+            .select("surveys.*", "participants.first_name", "participants.last_name", "event_templates.event_name", "event_occurrences.start_time")
+            .orderBy("surveys.submission_date", "desc")
+            .limit(limit)
+            .offset(offset);
+        applyFilters(dataQuery);
+        const surveys = await dataQuery;
+
+        res.render("surveys", { 
+            surveys, 
+            isManager: req.session.role === 'manager', 
+            query: searchQuery,
+            currentPage: page,
+            totalPages: totalPages
+        });
+    } catch(e) { console.error(e); res.status(500).send("Error"); }
 });
 
 app.get("/surveys/add", isManager, async (req, res) => {
@@ -626,47 +685,68 @@ app.post("/surveys/delete/:id", isManager, async (req, res) => {
 
 // 7. EVENTS
 app.get("/events", isLoggedIn, async (req, res) => {
-    let query = db("event_occurrences")
-        .join("event_templates", "event_occurrences.event_template_id", "event_templates.event_template_id")
-        .join("locations", "event_occurrences.location_id", "locations.location_id")
-        .select("event_occurrences.*", "event_templates.event_name", "event_templates.event_description", "locations.location_name")
-        .orderBy("event_occurrences.start_time", "desc");
+    const page = parseInt(req.query.page) || 1;
+    const limit = 100;
+    const offset = (page - 1) * limit;
     const searchQuery = req.query.q;
 
-    // --- LOGIC CHANGE: Check for Survey Submission for standard users ---
-    if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
-        const participantId = req.session.participantId;
-        
-        // 1. Filter only to events they registered for
-        // 2. LEFT JOIN to surveys to check if they submitted one for this specific event
-        query = query.join("registrations", "event_occurrences.event_occurrence_id", "registrations.event_occurrence_id")
-                     .where("registrations.participant_id", participantId)
-                     .leftJoin("surveys", function() {
-                         this.on("event_occurrences.event_occurrence_id", "=", "surveys.event_occurrence_id")
-                             .andOn("surveys.participant_id", "=", db.raw("?", [participantId]));
-                     })
-                     // We select survey_id. If it is NULL, they haven't taken it. If it exists, they have.
-                     .select("surveys.survey_id");
-    }
-
-    if (searchQuery) {
-        query = query.andWhere(builder => {
-            builder.where('event_templates.event_name', 'ilike', `%${searchQuery}%`)
+    const applyFilters = (builder) => {
+        if (searchQuery) {
+            builder.andWhere(sub => {
+                sub.where('event_templates.event_name', 'ilike', `%${searchQuery}%`)
                    .orWhere('locations.location_name', 'ilike', `%${searchQuery}%`)
                    .orWhereRaw("TO_CHAR(event_occurrences.start_time, 'MM/DD/YYYY') ILIKE ?", [`%${searchQuery}%`])
                    .orWhereRaw("TO_CHAR(event_occurrences.start_time, 'fmMM/fmDD/YYYY') ILIKE ?", [`%${searchQuery}%`])
                    .orWhereRaw("TO_CHAR(event_occurrences.start_time, 'MM-DD-YYYY') ILIKE ?", [`%${searchQuery}%`])
                    .orWhereRaw("TO_CHAR(event_occurrences.start_time, 'Month') ILIKE ?", [`%${searchQuery}%`])
                    .orWhereRaw("TO_CHAR(event_occurrences.start_time, 'YYYY-MM-DD') ILIKE ?", [`%${searchQuery}%`]);
-        });
-    }
+            });
+        }
+    };
 
-    const events = await query;
-    res.render("events", { 
-        events, 
-        isManager: req.session.role === 'manager', 
-        query: searchQuery 
-    });
+    try {
+        let baseQuery = db("event_occurrences")
+            .join("event_templates", "event_occurrences.event_template_id", "event_templates.event_template_id")
+            .join("locations", "event_occurrences.location_id", "locations.location_id");
+
+        // Logic check for standard user vs manager
+        if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
+            const participantId = req.session.participantId;
+            baseQuery = baseQuery.join("registrations", "event_occurrences.event_occurrence_id", "registrations.event_occurrence_id")
+                         .where("registrations.participant_id", participantId)
+                         .leftJoin("surveys", function() {
+                             this.on("event_occurrences.event_occurrence_id", "=", "surveys.event_occurrence_id")
+                                 .andOn("surveys.participant_id", "=", db.raw("?", [participantId]));
+                         });
+        }
+
+        // 1. Count
+        const countQuery = baseQuery.clone().count('event_occurrences.event_occurrence_id as count').first();
+        applyFilters(countQuery);
+        const countResult = await countQuery;
+        const totalPages = Math.ceil(parseInt(countResult.count) / limit);
+
+        // 2. Data
+        let dataQuery = baseQuery
+            .select("event_occurrences.*", "event_templates.event_name", "event_templates.event_description", "locations.location_name")
+            .orderBy("event_occurrences.start_time", "desc")
+            .limit(limit)
+            .offset(offset);
+        
+        if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
+            dataQuery = dataQuery.select("surveys.survey_id");
+        }
+        applyFilters(dataQuery);
+        const events = await dataQuery;
+
+        res.render("events", { 
+            events, 
+            isManager: req.session.role === 'manager', 
+            query: searchQuery,
+            currentPage: page,
+            totalPages: totalPages
+        });
+    } catch(e) { console.error(e); res.status(500).send("Error"); }
 });
 app.get("/events/add", isManager, async (req, res) => {
     const templates = await db("event_templates").select("*");
@@ -694,20 +774,18 @@ app.post("/events/delete/:id", isManager, async (req, res) => {
 
 // 8. MILESTONES
 app.get("/milestones", isLoggedIn, async (req, res) => {
-    let query = db("milestones")
-        .join("participants", "milestones.participant_id", "participants.participant_id")
-        .join("milestone_types", "milestones.milestone_type_id", "milestone_types.milestone_type_id")
-        .select("milestones.*", "participants.first_name", "participants.last_name", "milestone_types.milestone_title")
-        .orderBy("milestones.milestone_date", "desc");
+    const page = parseInt(req.query.page) || 1;
+    const limit = 100;
+    const offset = (page - 1) * limit;
     const searchQuery = req.query.q;
 
-    if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
-        query = query.where('milestones.participant_id', req.session.participantId);
-    }
-
-    if (searchQuery) {
-        query = query.andWhere(builder => {
-            builder.where('participants.first_name', 'ilike', `%${searchQuery}%`)
+    const applyFilters = (builder) => {
+        if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
+            builder.where('milestones.participant_id', req.session.participantId);
+        }
+        if (searchQuery) {
+            builder.andWhere(sub => {
+                sub.where('participants.first_name', 'ilike', `%${searchQuery}%`)
                    .orWhere('participants.last_name', 'ilike', `%${searchQuery}%`)
                    .orWhereRaw("CONCAT(participants.first_name, ' ', participants.last_name) ILIKE ?", [`%${searchQuery}%`])
                    .orWhere('milestone_types.milestone_title', 'ilike', `%${searchQuery}%`)
@@ -716,15 +794,37 @@ app.get("/milestones", isLoggedIn, async (req, res) => {
                    .orWhereRaw("TO_CHAR(milestones.milestone_date, 'MM-DD-YYYY') ILIKE ?", [`%${searchQuery}%`])
                    .orWhereRaw("TO_CHAR(milestones.milestone_date, 'Month') ILIKE ?", [`%${searchQuery}%`])
                    .orWhereRaw("TO_CHAR(milestones.milestone_date, 'YYYY-MM-DD') ILIKE ?", [`%${searchQuery}%`]);
-        });
-    }
+            });
+        }
+    };
 
-    const milestones = await query;
-    res.render("milestones", { 
-        milestones, 
-        isManager: req.session.role === 'manager', 
-        query: searchQuery 
-    });
+    try {
+        const countQuery = db("milestones")
+            .join("participants", "milestones.participant_id", "participants.participant_id")
+            .join("milestone_types", "milestones.milestone_type_id", "milestone_types.milestone_type_id")
+            .count("milestones.milestone_id as count").first();
+        applyFilters(countQuery);
+        const countResult = await countQuery;
+        const totalPages = Math.ceil(parseInt(countResult.count) / limit);
+
+        const dataQuery = db("milestones")
+            .join("participants", "milestones.participant_id", "participants.participant_id")
+            .join("milestone_types", "milestones.milestone_type_id", "milestone_types.milestone_type_id")
+            .select("milestones.*", "participants.first_name", "participants.last_name", "milestone_types.milestone_title")
+            .orderBy("milestones.milestone_date", "desc")
+            .limit(limit)
+            .offset(offset);
+        applyFilters(dataQuery);
+        const milestones = await dataQuery;
+
+        res.render("milestones", { 
+            milestones, 
+            isManager: req.session.role === 'manager', 
+            query: searchQuery,
+            currentPage: page,
+            totalPages: totalPages
+        });
+    } catch(e) { console.error(e); res.status(500).send("Error"); }
 });
 app.get("/milestones/add", isManager, async (req, res) => {
     const participants = await db("participants").select("participant_id", "first_name", "last_name").orderBy("last_name");

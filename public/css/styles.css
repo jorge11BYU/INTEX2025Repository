@@ -143,3 +143,30 @@ h1, h2, h3, h4, h5, .display-1, .display-2, .display-3, .display-4 {
     background-color: var(--accent-color) !important;
     color: var(--text-dark) !important;
 }
+
+/* --- 7. PAGINATION OVERRIDES --- */
+/* Override default Bootstrap blue pagination links */
+.page-link {
+    color: var(--primary-color) !important; /* Dark Grey text */
+    border-color: #dee2e6; /* Standard Bootstrap border color */
+}
+
+.page-link:hover {
+    color: var(--accent-color) !important; /* Pink on hover */
+    background-color: #f8f9fa; /* Light grey background on hover */
+    border-color: #dee2e6;
+}
+
+.page-item.active .page-link {
+    background-color: var(--primary-color) !important; /* Dark Grey background for active page */
+    border-color: var(--primary-color) !important;
+    color: var(--text-light) !important; /* White text */
+}
+
+/* Disabled state */
+.page-item.disabled .page-link {
+    color: #6c757d !important; /* Muted grey */
+    pointer-events: none;
+    background-color: #fff;
+    border-color: #dee2e6;
+}

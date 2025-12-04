@@ -96,6 +96,24 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- PAGINATION CONTROLS -->
+        <% if (isManager && totalPages > 1) { %>
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item <%= currentPage == 1 ? 'disabled' : '' %>">
+                    <a class="page-link" href="/participants?page=<%= currentPage - 1 %><%= query ? '&q=' + query : '' %>">Previous</a>
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link text-muted">Page <%= currentPage %> of <%= totalPages %></span>
+                </li>
+                <li class="page-item <%= currentPage == totalPages ? 'disabled' : '' %>">
+                    <a class="page-link" href="/participants?page=<%= currentPage + 1 %><%= query ? '&q=' + query : '' %>">Next</a>
+                </li>
+            </ul>
+        </nav>
+        <% } %>
+
     </div>
 
     <div class="modal fade" id="photoModal" tabindex="-1" aria-hidden="true">
