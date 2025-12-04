@@ -5,7 +5,7 @@
     <title>Dashboard - Ella Rises</title>
     
     <style>
-        /* UPDATED TABLEAU STYLES FOR FIXED WIDTH */
+        /* UPDATED TABLEAU STYLES FOR CENTERED FIXED WIDTH */
         .tableauPlaceholder {
             /* This ensures the container takes full available width */
             width: 100%;
@@ -13,11 +13,14 @@
             overflow-x: auto;
             /* Smooth scrolling experience */
             -webkit-overflow-scrolling: touch;
+            /* CENTER THE CONTENT */
+            display: flex;
+            justify-content: center;
         }
         
         /* We removed the '!important' width here so the JS can set a fixed pixel width */
         .tableauViz {
-            margin: 0 auto; /* Centers it if the container is wider than the dash */
+            margin: 0 auto; /* Redundant if flex works, but good fallback */
         }
     </style>
 </head>
@@ -59,7 +62,6 @@
 
         <!-- TABLEAU DASHBOARD SECTION -->
         <div class="card shadow-sm p-4 mb-5">
-            <!-- Header Removed as requested -->
             
             <!-- New Tableau Embed Code (Updated ID: viz1764868703480) -->
             <div class='tableauPlaceholder' id='viz1764868703480' style='position: relative'>
@@ -92,8 +94,8 @@
                 
                 // --- FIXED SIZING LOGIC ---
                 // We force the specific width/height you requested.
-                // Adjusted from 1100px to 1150px
-                // Adjusted from 800px to 850px
+                // 1150px width
+                // 850px height
                 vizElement.style.width = '1150px';
                 vizElement.style.height = '850px';
                 
