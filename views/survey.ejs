@@ -145,14 +145,14 @@
                                 <div class="w-100 d-none d-md-block border-bottom my-2"></div>
 
                                 <!-- 5. Overall -->
-                                <div class="col-md-6 border-end-md">
+                                <div class="col-md-12">
                                     <div class="p-2">
                                         <label class="rating-label">Overall Experience:</label>
-                                        <div class="scale-labels px-1">
+                                        <div class="scale-labels px-1" style="max-width: 50%;"> <!-- Constrain width slightly for aesthetics since it's full width now -->
                                             <span>Poor</span>
                                             <span>Great</span>
                                         </div>
-                                        <div class="d-flex justify-content-between px-2">
+                                        <div class="d-flex justify-content-between px-2" style="max-width: 50%;">
                                             <% for(let i=1; i<=5; i++) { %>
                                                 <div class="form-check text-center">
                                                     <input class="form-check-input" type="radio" name="overall" id="ovr<%=i%>" value="<%=i%>" required>
@@ -160,21 +160,6 @@
                                                 </div>
                                             <% } %>
                                         </div>
-                                    </div>
-                                </div>
-
-                                <!-- 6. NPS Bucket -->
-                                <div class="col-md-6">
-                                    <div class="p-2">
-                                        <label for="nps_bucket" class="rating-label">NPS Category</label>
-                                        <!-- Spacer to align with the radios roughly -->
-                                        <div class="mb-1 d-none d-md-block" style="height: 19px;"></div> 
-                                        <select class="form-select" name="nps_bucket" id="nps_bucket" required>
-                                            <option value="" selected disabled>-- Select Category --</option>
-                                            <option value="1">Detractor (I wouldn't recommend)</option>
-                                            <option value="2">Passive (It was okay)</option>
-                                            <option value="3">Promoter (I loved it!)</option>
-                                        </select>
                                     </div>
                                 </div>
 
