@@ -126,7 +126,8 @@ app.post("/signup", async (req, res) => {
         req.session.role = 'user';
         req.session.participantId = newPerson.participant_id;
         
-        req.session.save(() => res.redirect("/dashboard"));
+        // --- LOGIC CHANGE: Redirect regular users to Events ---
+        req.session.save(() => res.redirect("/events"));
 
     } catch (err) {
         console.error(err);
@@ -197,7 +198,15 @@ app.post("/login", async (req, res) => {
             }
             // ----------------------------------
 
-            req.session.save(() => res.redirect("/dashboard"));
+            // --- LOGIC CHANGE: Redirect based on Role ---
+            req.session.save(() => {
+                if (user.role === 'manager' || user.username === 'superuser') {
+                    res.redirect("/dashboard");
+                } else {
+                    res.redirect("/events");
+                }
+            });
+
         } else {
             res.render("login", { error_message: "Invalid credentials" });
         }
@@ -211,29 +220,42 @@ app.get("/logout", (req, res) => req.session.destroy(() => res.redirect("/")));
 
 // 3. Dashboard
 app.get("/dashboard", isLoggedIn, async (req, res) => {
+    // Guard: Only Managers/Superusers
+    if (req.session.role !== 'manager' && req.session.username !== 'superuser') {
+        return res.redirect("/events");
+    }
+
+    // --- DYNAMIC GREETING LOGIC ---
     const hour = new Date().getHours();
-    let greeting = hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening";
+    let greeting = "Good Morning";
+    
+    if (hour >= 12 && hour < 17) {
+        greeting = "Good Afternoon";
+    } else if (hour >= 17) {
+        greeting = "Good Evening";
+    }
+    // ------------------------------
+
+    // --- CAPITALIZE USERNAME ---
+    // This ensures "spencer" becomes "Spencer"
+    let displayUser = req.session.username;
+    if (displayUser) {
+        displayUser = displayUser.charAt(0).toUpperCase() + displayUser.slice(1);
+    }
+    // ---------------------------
+
     let stats = { participants: 0, events: 0, donations: 0 };
 
     try {
-        if (req.session.role === 'manager' || req.session.username === 'superuser') {
-            const p = await db("participants").count("participant_id as count").first();
-            const d = await db("donations").count("donation_id as count").first();
-            const e = await db("event_occurrences").count("event_occurrence_id as count").first();
-            stats = { participants: p.count, donations: d.count, events: e.count };
-        } else {
-            const myId = req.session.participantId;
-            stats.participants = myId ? 1 : 0; 
-            if (myId) {
-                const d = await db("donations").where({ participant_id: myId }).count("donation_id as count").first();
-                const e = await db("registrations").where({ participant_id: myId }).count("registration_id as count").first();
-                stats.donations = d.count;
-                stats.events = e.count;
-            }
-        }
+        const p = await db("participants").count("participant_id as count").first();
+        const d = await db("donations").count("donation_id as count").first();
+        const e = await db("event_occurrences").count("event_occurrence_id as count").first();
+        stats = { participants: p.count, donations: d.count, events: e.count };
+        
     } catch (e) { console.error(e); }
     
-    res.render("dashboard", { greeting, stats });
+    // Pass the capitalized 'displayUser' instead of raw session username
+    res.render("dashboard", { greeting, user: displayUser, stats });
 });
 
 // 4. PARTICIPANTS
@@ -348,10 +370,40 @@ app.post("/participants/edit/:id", isManager, async (req, res) => {
     });
     res.redirect("/participants");
 });
+
+// --- UPDATED DELETE ROUTE (Manual Cascade) ---
 app.post("/participants/delete/:id", isManager, async (req, res) => {
-    await db("participants").where({ participant_id: req.params.id }).del();
-    res.redirect("/participants");
+    const targetId = req.params.id;
+    
+    try {
+        // 1. Transaction: Ensure all deletes happen together or not at all
+        await db.transaction(async (trx) => {
+            
+            // A. Delete Donations first (The error you saw)
+            await trx("donations").where({ participant_id: targetId }).del();
+
+            // B. Delete other potential dependencies to prevent future errors
+            await trx("surveys").where({ participant_id: targetId }).del();
+            await trx("registrations").where({ participant_id: targetId }).del();
+            await trx("milestones").where({ participant_id: targetId }).del();
+            
+            // C. Delete the User Login (if they have one)
+            // Note: Users table likely links to participant_id
+            await trx("users").where({ participant_id: targetId }).del();
+
+            // D. Finally, delete the Participant
+            await trx("participants").where({ participant_id: targetId }).del();
+        });
+
+        res.redirect("/participants");
+
+    } catch (err) {
+        console.error("Delete Error:", err);
+        // If it fails (e.g., another unknown table links to them), send a friendly error
+        res.status(500).send("Error deleting participant. They may have other linked records.");
+    }
 });
+// ---------------------------------------------
 
 // 5. DONATIONS
 app.get("/donations", isLoggedIn, async (req, res) => {
@@ -457,7 +509,7 @@ app.post("/submit-survey", isLoggedIn, async (req, res) => {
         instructor, 
         recommend, 
         overall, 
-        nps_bucket, 
+        // nps_bucket is removed from here
         comments 
     } = req.body;
 
@@ -474,8 +526,21 @@ app.post("/submit-survey", isLoggedIn, async (req, res) => {
             return res.redirect("/events");
         }
 
-        // Updated to use SERIAL handling (remove manual nextId logic if you updated DB)
-        // Reverting to safe insert assuming SERIAL or manual fix you preferred
+        // --- NEW LOGIC: Calculate NPS Bucket automatically ---
+        let npsBucketId;
+        const recScore = parseInt(recommend);
+
+        if (recScore >= 1 && recScore <= 3) {
+            npsBucketId = 1; // Detractor
+        } else if (recScore === 4) {
+            npsBucketId = 2; // Passive
+        } else if (recScore === 5) {
+            npsBucketId = 3; // Promoter
+        } else {
+            npsBucketId = null; // Should not happen given required radio buttons
+        }
+        // -----------------------------------------------------
+
         await db("surveys").insert({
             participant_id: userId,
             event_occurrence_id: event_id,
@@ -484,7 +549,7 @@ app.post("/submit-survey", isLoggedIn, async (req, res) => {
             score_instructor: instructor,
             score_recommendation: recommend,
             score_overall: overall,
-            nps_bucket_id: nps_bucket,
+            nps_bucket_id: npsBucketId, // Use the calculated ID
             comments: comments,
             submission_date: new Date()
         });
